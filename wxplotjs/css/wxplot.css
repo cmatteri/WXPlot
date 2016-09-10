@@ -1,0 +1,40 @@
+.input-error {
+	border-color: red;
+}
+
+#control-form label {
+	margin-right: 2px;
+	font: 12px sans-serif;
+}
+
+#control-form input {
+	margin-right: 10px;
+}
+
+.error-message {
+	color: red;
+}
+
+#legend-box {
+	position: absolute;
+	bottom: 70px;
+	right: 10px;
+	font: 11px sans-serif;
+	background-color: white;
+	border: 1px solid black;
+}
+
+#legend-box p {
+	margin: 2px;
+	/*padding-left: 5px;
+	padding-right: 5px;*/
+}
+
+#legend-box p :first-child {
+	padding-right: 5px;
+}
+
+#wxplot {
+	position: relative;
+	display: inline-block;
+}
