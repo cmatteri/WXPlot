@@ -245,6 +245,17 @@ module.exports = class Plot {
     return this;
   }
 
+  removeTrace(legend) {
+    this.traces = this.traces.filter(trace => trace.legend != legend);
+    this.updateYScale();
+    this.render();
+    return this;
+  }
+
+  getTraces() {
+    return this.traces.map(trace => trace.legend);
+  }
+//
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
   drawXAxis() {
     const tickMarks = this.ticks(this.interval.start, this.interval.end);
@@ -410,7 +421,7 @@ module.exports = class Plot {
       var ref = Math.floor(+time / +tickPeriodMs) * +tickPeriodMs
       return moment.tz(ref, time.tz()).startOf(unit);
     }
-}
+  }
 
   // start and end are moments
   // returns an array of ticks which are unix time in ms
