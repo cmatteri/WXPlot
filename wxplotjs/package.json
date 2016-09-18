@@ -20,8 +20,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "mkdir -p bin; browserify -r ./src/plot.js:wxplot -t babelify | uglifyjs > bin/wxplot.min.js",
-    "build-dev": "mkdir -p dev; browserify -d -r ./src/plot.js:wxplot -t babelify > dev/wxplot.js",
-    "build-dev-no-babel": "mkdir -p dev; browserify -d -r ./src/plot.js:wxplot > dev/wxplot.js"
+    "watch": "mkdir -p dev; watchify -v -d -r ./src/plot.js:wxplot -o dev/wxplot.js"
   },
   "author": "Chris Matteri",
   "license": "MIT"

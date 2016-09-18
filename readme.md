@@ -28,9 +28,9 @@ npm build
 To use WXPlotJS, simply source css/wxplot.css and bin/wxplot.min.js and put ```WXPlot = require('wxplot')``` in your script. View wxplotjs/test/release/index.html for an example which sources all the necessary files, instantiates a plot and adds a few traces.
 
 ###Development
-To create a dev build, which includes source maps for easy debugging, run ```npm build-dev``` from the wxplotjs directory. WXPlotJS will run in Chrome without being transpiled, so if you're using Chrome you can run ```npm build-dev-no-babel``` to shave a few seconds off your build time.
+A script is included that uses watchify to automatically perform incremental rebuilds whenever one of the source files changes. To use it run ```npm watch``` from the wxplotjs directory. The script produces builds with source maps for easy debugging.
 
-This project includes a simple node app that functions as a dev server. To use it run ```node app.js```. Then navigate to [http://localhost:3000/dev](). WXPlotFlask must be running for data to load. The dev server also allows release builds to be tested at [http://localhost:3000/release]().
+A simple node app is also included that functions as a dev server. To use it run ```node app.js``` in the wxplotjs directory. Then navigate to [http://localhost:3000/dev](). WXPlotFlask must be running for data to load. The dev server also allows release builds to be tested at [http://localhost:3000/release]().
 
 WXPlotJS should work in all modern browsers.
 
