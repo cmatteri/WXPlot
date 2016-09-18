@@ -34,7 +34,7 @@ This project includes a simple node app that functions as a dev server. To use i
 
 WXPlotJS should work in all modern browsers.
 
-WXPlotJS should work with browserify, but it hasn't been tested yet.
+WXPlotJS works with browserify. Copy the wxplotjs folder to the node_modules directory in your project and ```require('wxplotjs')```. Browserify will automatically apply the babelify transform to wxplotjs (due to a key in wxplotjs's package.json).
 
 ##WXPlotFlask
 Install [weewx](http://weewx.com/).
