@@ -206,20 +206,18 @@ module.exports = class Plot {
     this.controlForm.end.property("value", this.interval.end.format('l'));
   }
 
-  addTrace(dataParams, legend, color, dash, width) {
+  setYLabel(label) {
+    this.yLabel = label;
+  }
+
+  addTrace(dataParams, legendText, color, dash, width) {
     const dataView = new DataView(Object.assign({}, dataParams))
         .setInterval((+this.interval.start), (+this.interval.end));
     dataView.onLoaded = this.onDataViewLoaded.bind(this);
 
-    this.traces.push({
-        legend,
-        width,
-        color,
-        dash,
-        dataView
-    });
 
-    if (this.traces.length === 1) {
+
+    if (this.traces.length === 0) {
       this.initializeLegendBox();      
     }
 
@@ -240,20 +238,36 @@ module.exports = class Plot {
     ctx.stroke(); 
 
     p.append("span")
-        .text(legend);
+        .text(legendText);
+
+    this.traces.push({
+        legendText,
+        legend: p,
+        width,
+        color,
+        dash,
+        dataView
+    });
 
     return this;
   }
 
-  removeTrace(legend) {
-    this.traces = this.traces.filter(trace => trace.legend != legend);
+  removeTrace(legendText) {
+    this.traces = this.traces.filter(trace => {
+      if(trace.legendText === legendText) {
+        trace.legend.remove()
+        return false;
+      }
+      return true;
+    });
+    
     this.updateYScale();
     this.render();
     return this;
   }
 
   getTraces() {
-    return this.traces.map(trace => trace.legend);
+    return this.traces.map(trace => trace.legendText);
   }
 //
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
@@ -317,10 +331,10 @@ module.exports = class Plot {
 
     this.context.save();
     this.context.rotate(-Math.PI / 2);
-    this.context.textAlign = "right";
+    this.context.textAlign = "center";
     this.context.textBaseline = "top";
     this.context.font = "bold 10px sans-serif";
-    this.context.fillText(this.yLabel, -10, 10);
+    this.context.fillText(this.yLabel, -this.lineBoxHeight/2, -this.margin.left);
     this.context.restore();
   }
 
