@@ -45,24 +45,6 @@ def hello_world():
         # Note: The manager does not need to closed explicitly because the DBBinder
         # will 
         archive = db_binder.get_manager(binding)
-        result = archive.getSql("SELECT min(interval) FROM {} "
-            "WHERE dateTime > {} AND dateTime <= {};".format(archive.table_name,
-                start, end))
-    
-        # Convert to seconds
-        if result[0]:
-            max_archive_interval = result[0] * 60
-        else:
-        # TODO: Handle this better
-            return '{"values": [], "unit": null}'
-    
-        if aggregate_interval < max_archive_interval:
-            err = {
-                "code" : 1,
-                "message" : "Aggregate less than archive interval",
-                "description" : "Aggregate must not be less than the maximum archive interval   between start and stop (which was {} seconds)".format(max_archive_interval)
-            }
-            return json.dumps(err), 404
     
         (start_vec_t, stop_vec_t, data_vec_t) = \
             archive._getSqlVectors((start, end), request.args.get('type'), aggregate_type=request.  args.get('aggregateType'),
