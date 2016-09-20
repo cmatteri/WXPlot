@@ -1,6 +1,23 @@
-let DataBlock = require("./datablock.js");
+let DataBlock = require('./datablock.js');
 
+/*
+ * Gets data for a trace, given a time interval. Data is loaded from the server
+ * in small segments (represented by the DataSegment class) to allow seamless
+ * panning and to facilitate caching. When the time interval is changed, a set
+ * of segments that give an appropriate resolution for that interval is loaded.
+ * It takes time for segments to load, and they likely won't all load at the
+ * same time. The DataBlock class represents a set of segments, and simplifies
+ * the transition from one set to another. DataSegments are cached to avoid
+ * loading them multiple times if they occur in multiple DataBlocks. The time
+ * intervals of the segments are chosen in a repeatable manner, to facilitate
+ * caching on the server and in the browser.
+ */
 module.exports = class DataView {
+  /*
+   * Creates a DataView. The interval is not known yet, so no data is loaded.
+   * dataParams is that same object that is passed to the addTrace method in the
+   * plot class.
+   */
   constructor(dataParams) {
     this.dataParams = dataParams;
     this.segmentCache = [];
@@ -13,20 +30,40 @@ module.exports = class DataView {
     this.DATABLOCK_LOAD_DELAY_MS = 100;
   }
 
+  /*
+   * Returns true iff the DataView is loading data (it is loading a new
+   * DataBlock)
+   */
   isLoading() {
     return this.nextDataBlock != null;
   }
 
+  /*
+   * Returns true iff the DataView has loaded a DataBlock is not loading a new
+   * one
+   */
   isLoaded() {
     return this.currentDataBlock != null;
   }
 
+  /*
+   * @param {Number} start - Unix time (in ms) of the start of the interval
+   * @param {Number} end - Unix time (in ms) of the end of the interval
+   * @param {Function} onLoaded - Callback that is called once the DataView has
+   * loaded new data.
+   * @returns {DataView} The object setInterval was called on
+   */
   setInterval(start, end, onLoaded) {
     this.interval = {start, end};
     this.updateDataBlock();
     return this;
   }
 
+  /*
+   * Caches data for the DataView's interval. This data is a slice of the
+   * DataView's current DataBlock's data. It is cached to avoid having to
+   * compute that slice every time it is accessed.
+   */
   cacheData() {
     const block = this.currentDataBlock;
     if (this.dataCache != null && this.dataCache.start === this.interval.start
@@ -86,14 +123,21 @@ module.exports = class DataView {
     return this.dataCache.displayData;
   }
 
+  /*
+   * Determines the appropriate DataBlock for the current interval. If that
+   * DataBlock is already the current DataBlock, nothing is done. Otherwise,
+   * the new DataBlock is created and loaded.
+   */
   updateDataBlock() {
+    const SEGMENTS_PER_BLOCK = 4;
     const segmentLength = this.segmentLength();
 
     const startOfThirdSegment = Math.floor(this.interval.start / segmentLength) * segmentLength;
     const startOfFirstSegment = startOfThirdSegment - 2*segmentLength;
     const endOflastSegment = startOfFirstSegment + 4*segmentLength;
 
-    const target = new DataBlock(startOfFirstSegment, endOflastSegment, this.dataParams); 
+    const target = new DataBlock(startOfFirstSegment, endOflastSegment,
+      this.dataParams, SEGMENTS_PER_BLOCK); 
     if ((this.currentDataBlock && target.isSameAs(this.currentDataBlock))
         || (this.nextDataBlock && target.isSameAs(this.nextDataBlock))) {
         return;
@@ -124,7 +168,10 @@ module.exports = class DataView {
     this.nextDataBlock = target;
   }
 
-  // returns the segment length in ms
+  /*
+   * Returns the segment length in ms. It is calculated from the length of the
+   * current interval (the level of zoom).
+   */
   segmentLength() {
     const MS_PER_MINUTE = 60 * 1000;
     const pointsPerSegment = this.dataParams.minDataPoints * 2;

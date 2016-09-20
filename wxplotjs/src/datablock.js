@@ -1,34 +1,57 @@
-let DataSegment = require("./datasegment.js");
+let DataSegment = require('./datasegment.js');
 
+/*
+ * Holds a set of contiguous DataSegment objects. See the DataView class comment
+ * for its purpose.
+ */
 module.exports = class DataBlock {
-  constructor(start, end, dataParams) {
+  /*
+   * Creates a DataBlock, but doesn't doesn't create its DataSegments.
+   * @param {Number} start - Unix time (in ms) of the start of the block's interval
+   * @param {Number} end - Unix time (in ms) of the end of the block's interval
+   * @param {Object} dataParams - Same as object passed to the addTrace method
+   * in the plot class
+   * @param {Number} segmentCount - The number of segments to split the interval
+   * into
+   */
+  constructor(start, end, dataParams, segmentCount) {
     this.interval = {start, end};
     this.dataParams = dataParams;
     this.segmentCache = [];
     this.onLoaded = null;
-    this.SEGMENTS_PER_DATA_INTERVAL = 4;
-    this.segmentLength = (end - start) / this.SEGMENTS_PER_DATA_INTERVAL;
+    this.segmentLength = (end - start) / segmentCount;
     this.pointsPerSegment = dataParams.minDataPoints * 2;
     this.aggregateInterval = this.segmentLength / this.pointsPerSegment;
     this.segments = null;
     this.data = null;
   }
 
+  // Compares two DataBlocks
   isSameAs(other) {
     return this.interval.start === other.interval.start
       && this.interval.end === other.interval.end;
   }
 
+  /*
+   * @param {Array} segmentCache - A cache of segments created previously. They
+   * may still be loading.
+   * @param {Function} onLoaded - Callback that is called once all DataSegments
+   * in this DataBlock have loaded
+   * @returns {DataBlock} the object load was called on
+   */
   load(segmentCache, onLoaded) {
     if (segmentCache) this.segmentCache = segmentCache;
     this.onLoaded = onLoaded;
     this.getSegments();
+    return this;
   }
 
+  // @returns {Boolean} True iff all data has loaded
   get loaded() {
     return this.data !== null;
   }
 
+  // Creates the segments. They will automatically load themselves from the server.
   getSegments() {
     var segmentPromises = [];
     for (var segmentStart = this.interval.start; segmentStart < this.interval.end; segmentStart += this.segmentLength) {
@@ -65,6 +88,12 @@ module.exports = class DataBlock {
     });
   }
 
+  /*
+   * Checks the segment cache for a segment. If the segment is not found, it is 
+   * created and added to the cache.
+   * The parameters are the same as those of the DataSegment constructor with
+   * the same name.
+   */
   getSegment(start, end, aggregateInterval) {
     for (const segment of this.segmentCache) {
       if (segment.start === start && segment.end === end && segment.aggregateInterval === aggregateInterval) {
