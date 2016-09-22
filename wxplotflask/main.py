@@ -33,21 +33,21 @@ def iso8601_to_unix_time(date):
     delta = dt - datetime.datetime(1970, 1, 1, tzinfo=dateutil.tz.tzutc())
     return delta.total_seconds()
 
-@app.route('/')
-def hello_world():
+@app.route('/<data_binding>/<wx_observation>')
+def hello_world(data_binding, wx_observation):
     start = iso8601_to_unix_time(request.args.get('start'))
     end = iso8601_to_unix_time(request.args.get('end'))
 
     aggregate_interval = int(request.args.get('aggregateInterval'))
 
     with weewx.manager.DBBinder(config_dict) as db_binder:
-        binding = config_dict['WXPlot']['data_binding']
         # Note: The manager does not need to closed explicitly because the DBBinder
         # will 
-        archive = db_binder.get_manager(binding)
+        archive = db_binder.get_manager(data_binding)
     
         (start_vec_t, stop_vec_t, data_vec_t) = \
-            archive._getSqlVectors((start, end), request.args.get('type'), aggregate_type=request.  args.get('aggregateType'),
+            archive._getSqlVectors((start, end), wx_observation,
+            aggregate_type=request.args.get('aggregateType'),
             aggregate_interval=aggregate_interval, unix_time_intervals=True)
                 
         # To reduce data size, the data returned by this server does not include
