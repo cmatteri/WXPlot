@@ -275,16 +275,19 @@ class Plot {
   /**
    * Adds a new trace
    * @param {Object} dataParams - Describes the data for a trace
-   * @param {String} dataParams.type - A weewx archive type. e.g. "outTemp"
    * @param {String} dataParams.aggregateType - A weewx aggregate type. e.g.
    * "avg"
-   * @param {String} dataParams.url - Backend URL, specified per trace to
-   * increase flexibility.
+   * @param {String} dataParams.url - Must include the location of the backend
+   * sever (which must have the same origin as the site serving wxplotjs), and
+   * the desired weewx data binding and observation type e.g. 
+   * URL-of-server/wxplot_binding/outTemp
    * @param {Number} dataParams.archiveIntervalMinutes - The archive interval
    * (or the maximum archive interval if multiple archive intervals have been
    * used).
    * @param {Number} dataParams.minDataPoints - At least this many data points
    * will always be visible.
+   * @param {Number} dataParams.offset - Optional. Shift this trace to the right
+   * (forward in time) this many seconds.
    * @param {String} legendText - The text to display in the legend for this
    * trace
    * @param {String} color - The color of the trace. A CSS color value.

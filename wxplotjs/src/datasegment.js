@@ -14,6 +14,10 @@ module.exports = class DataSegment {
   constructor(start, end, aggregateInterval, dataParams) {
     this.start = start;
     this.end = end;
+    if ('offset' in dataParams) {
+      this.start -= dataParams.offset;
+      this.end -= dataParams.offset;
+    }
     this.aggregateInterval = aggregateInterval;
     this.dataParams =  dataParams;
     this.pointsPerSegment = Math.floor((end - start) / aggregateInterval);
@@ -35,7 +39,6 @@ module.exports = class DataSegment {
     d3.request(this.dataParams.url + '?start=' + encodeURIComponent(startDate.toISOString())
       + '&end=' + encodeURIComponent(endDate.toISOString())
       + '&aggregateInterval=' + this.aggregateInterval/1000
-      + '&type=' + encodeURIComponent(this.dataParams.type)
       + '&aggregateType=' + this.dataParams.aggregateType)
       .get((error, xhr) => {
         if (error) {

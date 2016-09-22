@@ -61,53 +61,99 @@ wxplotflask/run.sh
 or deploy as a flask app.
 
 #API Reference
-```WXPlot = require('wxplot')```
-##WXPlot Class
-new WXPlot(*root*, *timeZone*, *yLabel*, *interval*, *maxInterval*, *options*);
 
-**root:**
-A D3 selection that the plot will be appended to
+<a name="Plot"></a>
 
-**timeZone:**
-A [time zone identifier](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) string corresponding to the time zone of the weather station. E.g. "America/Los_Angeles"
+## Plot
+A weather data plot.
 
-**yLabel:**
-String label for the vertical axis
+**Kind**: global class  
 
-**interval:**
-An object that specifies the initial time interval to display. It must have start and end properties which are unix times in ms.
+* [Plot](#Plot)
+    * [new Plot(root, timeZone, yLabel, interval, maxInterval, options)](#new_Plot_new)
+    * [.setInterval(interval)](#Plot+setInterval)
+    * [.setYLabel(label)](#Plot+setYLabel) ⇒ <code>[Plot](#Plot)</code>
+    * [.addTrace(dataParams, legendText, color, dash, width)](#Plot+addTrace) ⇒ <code>[Plot](#Plot)</code>
+    * [.getTraces()](#Plot+getTraces) ⇒ <code>Array</code>
+    * [.removeTrace(legendText)](#Plot+removeTrace) ⇒ <code>[Plot](#Plot)</code>
 
-```javascript
-{
-  start: +(new Date("1/1/2015")),
-  end: +(new Date("1/1/2016"))
-};
-```
+<a name="new_Plot_new"></a>
 
-**maxInterval:**
-An interval object, with the same structure as the interval parameter, that limits the panning/zooming of the plot.
+### new Plot(root, timeZone, yLabel, interval, maxInterval, options)
 
-**options:**
-An object containing optional parameters as properties. Currently the only optional parameter is **smooth**, which may be set to false to cause the plot to not draw a smooth line (by default, WXPlot uses [monotone cubic interpolation](https://en.wikipedia.org/wiki/Monotone_cubic_interpolation) to produce smooth lines that pass through all data points and do not introduce minima or maxima between points).
+| Param | Type | Description |
+| --- | --- | --- |
+| root | <code>d3.Selection</code> | Selection the plot will be appended to (as a div) |
+| timeZone | <code>String</code> | Time zone identifier corresponding to the time zone of the weather station, e.g. 'America/Los_Angeles' |
+| yLabel | <code>String</code> | Label for the vertical axis |
+| interval | <code>Object</code> | Specifies the initial time interval to display e.g. ```{   start: +(new Date("1/1/2015")),   end: +(new Date("1/1/2016")) };``` |
+| interval.start | <code>Number</code> | Unix time of the start of the interval in ms. |
+| interval.end | <code>Number</code> | Unix time of the end of the interval in ms. |
+| maxInterval | <code>Object</code> | An interval object, with the same structure as the interval parameter, that limits the panning/zooming of the plot. |
+| options | <code>Object</code> | Properties of options are optional parameters |
+| options.smooth | <code>Boolean</code> | Set to false to not draw smooth traces (by default, WXPlot uses monotone cubic interpolation to produce smooth lines that pass through all data points and do not introduce minima or maxima between points). |
 
-###Methods
-addTrace(*dataParams*, *color*, *dash*, *width*)
+<a name="Plot+setInterval"></a>
 
-**dataParams:** An object describing the data for a trace. Must have the following properties:
+### plot.setInterval(interval)
+Sets the plot's interval
 
-- **type:** A weewx archive type. e.g. "outTemp"
-- **aggregateType:** A weewx aggregate type. e.g. "avg"
-- **url:** Backend URL. Specified per trace to increase flexibility.
-- **archiveIntervalMinutes:** The archive interval (or the maximum archive interval if multiple archive intervals have been used).
-- **minDataPoints:** At least this many data points will always be visible.
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
 
-**color:**
-The color of the trace. A CSS color value.
+| Param | Type | Description |
+| --- | --- | --- |
+| interval | <code>Object</code> |  |
+| interval.start | <code>Number</code> | Unix time of the start of the interval in ms. |
+| interval.end | <code>Number</code> | Unix time of the end of the interval in ms. |
 
-**dash:**
-An array specifying the line dash to be passed to [ctx.setLineDash](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setLineDash). Pass an empty array for solid lines.
+<a name="Plot+setYLabel"></a>
 
-**width:**
-The width of the trace in px.
+### plot.setYLabel(label) ⇒ <code>[Plot](#Plot)</code>
+Sets the y-axis label
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+**Returns**: <code>[Plot](#Plot)</code> - The object setYLabel was called on  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| label | <code>String</code> | The new label |
+
+<a name="Plot+addTrace"></a>
+
+### plot.addTrace(dataParams, legendText, color, dash, width) ⇒ <code>[Plot](#Plot)</code>
+Adds a new trace
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+**Returns**: <code>[Plot](#Plot)</code> - the object addTrace was called on  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dataParams | <code>Object</code> | Describes the data for a trace |
+| dataParams.aggregateType | <code>String</code> | A weewx aggregate type. e.g. "avg" |
+| dataParams.url | <code>String</code> | Must include the location of the backend sever (which must have the same origin as the site serving wxplotjs), and the desired weewx data binding and observation type e.g.  URL-of-server/wxplot_binding/outTemp |
+| dataParams.archiveIntervalMinutes | <code>Number</code> | The archive interval (or the maximum archive interval if multiple archive intervals have been used). |
+| dataParams.minDataPoints | <code>Number</code> | At least this many data points will always be visible. |
+| dataParams.offset | <code>Number</code> | Optional. Shift this trace to the right (forward in time) this many seconds. |
+| legendText | <code>String</code> | The text to display in the legend for this trace |
+| color | <code>String</code> | The color of the trace. A CSS color value. |
+| dash | <code>Array</code> | Specifies the line dash to be passed to [ctx.setLineDash](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setLineDash). Pass an empty array for solid lines |
+| width | <code>Number</code> | The width of the trace in px |
+
+<a name="Plot+getTraces"></a>
+
+### plot.getTraces() ⇒ <code>Array</code>
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+**Returns**: <code>Array</code> - The legend text of each of the plots traces.  
+<a name="Plot+removeTrace"></a>
+
+### plot.removeTrace(legendText) ⇒ <code>[Plot](#Plot)</code>
+Removes a trace from the plot
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+**Returns**: <code>[Plot](#Plot)</code> - the object removeTrace was called on.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| legendText | <code>String</code> | The legend text of the trace to remove (The same string that was passed to addTrace as the legendText parameter when the trace was added). |
 
 Please send questions/comments to chrismatteri@gmail.com.
