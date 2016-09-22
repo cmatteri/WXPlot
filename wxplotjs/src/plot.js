@@ -21,6 +21,8 @@ class Plot {
    * @param {Object} maxInterval - An interval object, with the same structure
    * as the interval parameter, that limits the panning/zooming of the plot.
    * @param {Object} options - Properties of options are optional parameters
+   * @param {Number} options.minIntervalLength - The minimum interval length in
+   * ms. Default is one hour.
    * @param {Boolean} options.smooth - Set to false to not draw smooth traces
    * (by default, WXPlot uses monotone cubic interpolation to produce smooth
    * lines that pass through all data points and do not introduce minima or
@@ -73,9 +75,16 @@ class Plot {
     this.initializeControlForm();
     this.updateControlForm();
 
-    const ONE_HOUR_IN_MS = 3600000;
+    let minIntervalLength;
+    if ('minIntervalLength' in this.options) {
+      minIntervalLength = this.options.minIntervalLength;
+    } else {
+      // One hour in ms
+      minIntervalLength = 3600000;
+    }
+
     const minScale = (interval.end - interval.start) / (maxInterval.end - maxInterval.start);
-    const maxScale = (interval.end - interval.start) / ONE_HOUR_IN_MS;
+    const maxScale = (interval.end - interval.start) / minIntervalLength;
     this.zoom = d3.zoom()
         .extent([[0, 0], [this.lineBoxWidth, this.lineBoxHeight]])
         .scaleExtent([minScale, maxScale])

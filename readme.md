@@ -91,6 +91,7 @@ A weather data plot.
 | interval.end | <code>Number</code> | Unix time of the end of the interval in ms. |
 | maxInterval | <code>Object</code> | An interval object, with the same structure as the interval parameter, that limits the panning/zooming of the plot. |
 | options | <code>Object</code> | Properties of options are optional parameters |
+| options.minIntervalLength | <code>Number</code> | The minimum interval length in ms. Default is one hour. |
 | options.smooth | <code>Boolean</code> | Set to false to not draw smooth traces (by default, WXPlot uses monotone cubic interpolation to produce smooth lines that pass through all data points and do not introduce minima or maxima between points). |
 
 <a name="Plot+setInterval"></a>
