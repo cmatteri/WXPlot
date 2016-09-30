@@ -12,9 +12,6 @@ class WXPlotManagerInstaller(ExtensionInstaller):
             author="Chris Matteri",
             author_email="chrismatteri@gmail.com",
             config={
-                'WXPlot': {
-                    'data_binding': 'wxplot_binding'
-                },
                 'DataBindings': {
                     'wxplot_binding': {
                         'database': 'archive_sqlite',
