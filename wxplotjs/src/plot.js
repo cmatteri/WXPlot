@@ -231,11 +231,11 @@ class Plot {
     this.controlForm.start.classed('input-error', false);
     this.controlForm.end.classed('input-error', false);
 
-    if (start < maxInterval.start) {
-      start = maxInterval.start;
+    if (start < this.maxInterval.start) {
+      start = this.maxInterval.start;
     }
-    if (end > maxInterval.end) {
-      end = maxInterval.end;
+    if (end > this.maxInterval.end) {
+      end = this.maxInterval.end;
     }
     this.controlForm.errorMessage.text('');
     this.setInterval({start, end});      
