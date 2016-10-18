@@ -324,8 +324,6 @@ class Plot {
         .setInterval((+this.interval.start), (+this.interval.end));
     dataView.onLoaded = this.onDataViewLoaded.bind(this);
 
-
-
     if (this.traces.length === 0) {
       this.initializeLegendBox();      
     }
@@ -563,6 +561,9 @@ class Plot {
     this.context.clearRect(-this.margin.left, -this.margin.top, this.margin.left, this.height);
     this.drawYAxis();
     this.drawTraces();
+
+    this.context.lineWidth = 1;
+    this.context.setLineDash([]);
     this.context.strokeStyle = 'gray';
     this.context.strokeRect(-0.5, -0.5, this.lineBoxWidth, this.lineBoxHeight + 1);
   }
@@ -580,6 +581,8 @@ class Plot {
       this.context.lineTo(this.xScale(tick), this.lineBoxHeight + tickSize);
     }
 
+    this.context.lineWidth = 1;
+    this.context.setLineDash([]);
     this.context.strokeStyle = 'black';
     this.context.stroke();
 
@@ -611,6 +614,9 @@ class Plot {
       this.context.moveTo(0, this.yScale(tick));
       this.context.lineTo(-6, this.yScale(tick));
     }
+
+    this.context.lineWidth = 1;
+    this.context.setLineDash([]);
     this.context.strokeStyle = 'black';
     this.context.stroke();
 
