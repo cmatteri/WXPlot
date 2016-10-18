@@ -92,12 +92,25 @@ class Plot {
           [this.origXScale(maxInterval.end), this.height]])
         .on('zoom', this.zoomed.bind(this));
 
+    /* 
+     * To produce a crisp image, the dimensions of the canvas buffer should
+     * equal the dimensions in pixels of the rendered canvas on the screen of
+     * the user's device. To accomplish this the dimensions of the canvas are
+     * scaled by devicePixelRatio and a style is used to force the logical size
+     * of the canvas to the original unscaled dimensions. The dimenions of the 
+     * rendered canvas will equal its logical dimensions multiplied by the
+     * devicePixelRatio, which is exactly the size of the canvas buffer. The
+     * context is scaled so the canvas can be treated as if had its original
+     * unscaled dimensions when drawing.
+     */
     this.canvas = this.plotDiv.append('canvas')
-        .attr('width', this.width)
-        .attr('height', this.height)
+        .attr('width', devicePixelRatio * this.width)
+        .attr('height', devicePixelRatio * this.height)
+        .style('width', this.width + 'px')
         .call(this.zoom);
 
     this.context = this.canvas.node().getContext('2d');
+    this.context.scale(devicePixelRatio, devicePixelRatio);
     this.context.translate(this.margin.left, this.margin.top);
     this.TEXT_SIZE = 10;
     this.context.font = this.TEXT_SIZE + 'px sans-serif';
@@ -570,6 +583,7 @@ class Plot {
     this.context.strokeStyle = 'black';
     this.context.stroke();
 
+    // Draw vertical grid lines
     for (const tick of tickValues) {
       this.context.moveTo(this.xScale(tick), 0);
       this.context.lineTo(this.xScale(tick), this.lineBoxHeight);
