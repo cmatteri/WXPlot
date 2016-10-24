@@ -60,8 +60,8 @@ class Plot {
      
     this.lineGenerator = d3.line()
         .defined(function(d) { return d[1] != null; })
-        .x(d => { return this.xScale(d[0]); })
-        .y(d => { return this.yScale(d[1]); });
+        .x((d) => { return this.xScale(d[0]); })
+        .y((d) => { return this.yScale(d[1]); });
 
     if (!('smooth' in this.options) || this.options.smooth === true) {
       // Best to use curveMonotoneX or curveLinear so the maxima and minima in
@@ -107,11 +107,7 @@ class Plot {
         .attr('width', devicePixelRatio * this.width)
         .attr('height', devicePixelRatio * this.height)
         .style('width', this.width + 'px')
-        .call(this.zoom)
-        // If the zoom transform is at one of its scale extents, D3 will not
-        // cancel wheel events. It is annoying for a page to scroll when we hit
-        // maximum zoom, so we prevent it here.
-        .on('wheel', () => d3.event.preventDefault());
+        .call(this.zoom);
 
     this.context = this.canvas.node().getContext('2d');
     this.context.scale(devicePixelRatio, devicePixelRatio);
