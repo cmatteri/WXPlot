@@ -2,12 +2,12 @@
 	border-color: red;
 }
 
-#control-form label {
+#interval-control-form label {
 	margin-right: 2px;
 	font: 12px sans-serif;
 }
 
-#control-form input {
+#interval-control-form input {
 	margin-right: 10px;
 }
 
@@ -32,6 +32,14 @@
 
 #legend-box p :first-child {
 	padding-right: 5px;
+}
+
+#timespan-control-form {
+	padding-top: 5px;
+}
+
+#timespan-control-form input {
+	margin-right: 5px;
 }
 
 #wxplot {

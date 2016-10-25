@@ -177,11 +177,10 @@ class Plot {
         .attr('id', 'legend-box');
   }
 
-
   // Creates the labels and inputs for controlling the plot's interval
   initializeControlForm() {
     const form = this.plotDiv.append('form');
-    form.attr('id', 'control-form');
+    form.attr('id', 'interval-control-form');
 
     form.append('label')
         .text('Start:');
@@ -213,6 +212,72 @@ class Plot {
       end,
       errorMessage
     };
+
+    // Add a row of buttons to control the timespan
+    const timeSpanForm = this.plotDiv.append('form')
+    timeSpanForm.attr('id', 'timespan-control-form')
+
+    const timeSpans = [
+      {value: 1, unit:'d'},
+      {value: 3, unit:'d'},
+      {value: 1, unit:'w'},
+      {value: 1, unit:'M'},
+      {value: 3, unit:'M'},
+      {value: 1, unit:'y'},
+      {value: 5, unit:'y'},
+      {unit:'max'}
+    ]
+
+    for (const timeSpan of timeSpans) {
+      const input = timeSpanForm.append('input')
+        .attr('type', 'button')
+
+      if (timeSpan.unit === 'max') {
+        input.attr('value', 'max')
+        .on('click', () => this.setInterval({
+          start: +this.maxInterval.start,
+          end: +this.maxInterval.end
+        }))
+      } else {
+        input.attr('value', timeSpan.value + timeSpan.unit.toLowerCase())
+        .on('click', () => this.setTimeSpan(moment.duration(timeSpan.value,
+          timeSpan.unit)))
+      }
+    }
+  }
+
+  /*
+   * Sets the plot's timespan (the duration of the plot's interval) to
+   * timeSpan, a Moment duration. setTimeSpan will attempt to achieve the new
+   * timespan by altering only the plot's interval's start time, but if that is
+   * not possible, it will change the interval's end as well. If timeSpan is
+   * greater than the plot's maximum timespan (as determined by the maximum
+   * interval), the plot will be set to its maximum interval.
+   */
+  setTimeSpan(timeSpan) {
+    const possibleStart = this.interval.end.clone().subtract(timeSpan)
+    if (possibleStart.isSameOrAfter(this.maxInterval.start)) {
+      // we good
+      this.setInterval({
+        start: +possibleStart,
+        end: +this.interval.end
+      })
+      return;
+    } else {
+      const possibleEnd = this.maxInterval.start.clone().add(timeSpan)
+      if (possibleEnd.isSameOrBefore(this.maxInterval.end)) {
+        // we good
+        this.setInterval({
+          start: +this.maxInterval.start,
+          end: +possibleEnd
+        })
+      } else {
+        this.setInterval({
+          start: +this.maxInterval.start,
+          end: +this.maxInterval.end
+        })
+      }
+    }
   }
 
   /*
