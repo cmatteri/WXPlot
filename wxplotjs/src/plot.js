@@ -72,8 +72,8 @@ class Plot {
     
     this.plotDiv = root.append('div')
         .attr('id', 'wxplot')
-    this.initializeControlForm();
-    this.updateControlForm();
+    this.initializeControls();
+    this.updateControls();
 
     let minIntervalLength;
     if ('minIntervalLength' in this.options) {
@@ -177,47 +177,42 @@ class Plot {
         .attr('id', 'legend-box');
   }
 
-  // Creates the labels and inputs for controlling the plot's interval
-  initializeControlForm() {
-    const form = this.plotDiv.append('form');
-    form.attr('id', 'interval-control-form');
+  // Creates the input elements used to control/display the plot's interval
+  initializeControls() {
+    // Add inputs to set/display the plot's start and end date
+    const startEndDateForm = this.plotDiv.append('form');
+    startEndDateForm.attr('id', 'interval-control-form');
 
-    form.append('label')
-        .text('Start:');
-    const start = form.append('input')
+    startEndDateForm.append('label')
+        .text('Start Date:');
+    const start = startEndDateForm.append('input')
         .attr('type', 'text')
         .on('keypress', () => {
           if(d3.event.which === 13) {
             start.node().blur();
-            this.processControlForm();
+            this.processStartEndDateForm();
           }
         });
 
-    form.append('label')
-        .text('End:');
-    const end = form.append('input')
+    startEndDateForm.append('label')
+        .text('End Date:');
+    const end = startEndDateForm.append('input')
         .attr('type', 'text')
         .on('keypress', () => {
           if(d3.event.which === 13) {
             end.node().blur();
-            this.processControlForm();
+            this.processStartEndDateForm();
           }
         });
 
-    const errorMessage = form.append('label')
+    const errorMessage = startEndDateForm.append('label')
       .classed('error-message', true);
 
-    this.controlForm = {
-      start,
-      end,
-      errorMessage
-    };
-
     // Add a row of buttons to control the timespan
-    const timeSpanForm = this.plotDiv.append('form')
-    timeSpanForm.attr('id', 'timespan-control-form')
+    const timespanForm = this.plotDiv.append('form')
+    timespanForm.attr('id', 'timespan-control-form')
 
-    const timeSpans = [
+    const timespans = [
       {value: 1, unit:'d'},
       {value: 3, unit:'d'},
       {value: 1, unit:'w'},
@@ -225,37 +220,55 @@ class Plot {
       {value: 3, unit:'M'},
       {value: 1, unit:'y'},
       {value: 5, unit:'y'},
+      {value: 10, unit:'y'},
       {unit:'max'}
     ]
 
-    for (const timeSpan of timeSpans) {
-      const input = timeSpanForm.append('input')
+    for (const timespan of timespans) {
+      const button = timespanForm.append('input')
         .attr('type', 'button')
 
-      if (timeSpan.unit === 'max') {
-        input.attr('value', 'max')
-        .on('click', () => this.setInterval({
-          start: +this.maxInterval.start,
-          end: +this.maxInterval.end
-        }))
+      timespan.button = button;
+
+      if (timespan.unit === 'max') {
+        button.attr('value', 'max')
+        .on('click', () => {
+          this.setInterval({
+            start: +this.maxInterval.start,
+            end: +this.maxInterval.end
+          });
+          button.node().blur()
+        })
       } else {
-        input.attr('value', timeSpan.value + timeSpan.unit.toLowerCase())
-        .on('click', () => this.setTimeSpan(moment.duration(timeSpan.value,
-          timeSpan.unit)))
+        timespan.duration = moment.duration(timespan.value, timespan.unit)
+        button.attr('value', timespan.value + timespan.unit.toLowerCase())
+        .on('click', () => {
+          this.setTimeSpan(timespan.duration)
+          button.node().blur()
+        })
       }
     }
+
+    this.controlForm = {
+      start,
+      end,
+      errorMessage,
+      timespans
+    };
   }
 
   /*
    * Sets the plot's timespan (the duration of the plot's interval) to
-   * timeSpan, a Moment duration. setTimeSpan will attempt to achieve the new
+   * timespan, a Moment duration. setTimeSpan will attempt to achieve the new
    * timespan by altering only the plot's interval's start time, but if that is
-   * not possible, it will change the interval's end as well. If timeSpan is
+   * not possible, it will change the interval's end as well. If timespan is
    * greater than the plot's maximum timespan (as determined by the maximum
    * interval), the plot will be set to its maximum interval.
    */
-  setTimeSpan(timeSpan) {
-    const possibleStart = this.interval.end.clone().subtract(timeSpan)
+  setTimeSpan(timespan) {
+    // We can't do the following calculations in unix time because months and
+    // years have variable length in ms.
+    const possibleStart = this.interval.end.clone().subtract(timespan)
     if (possibleStart.isSameOrAfter(this.maxInterval.start)) {
       // we good
       this.setInterval({
@@ -264,7 +277,7 @@ class Plot {
       })
       return;
     } else {
-      const possibleEnd = this.maxInterval.start.clone().add(timeSpan)
+      const possibleEnd = this.maxInterval.start.clone().add(timespan)
       if (possibleEnd.isSameOrBefore(this.maxInterval.end)) {
         // we good
         this.setInterval({
@@ -285,7 +298,7 @@ class Plot {
    * updated to display that interval. Otherwise an error message indicating the
    * problem is displayed.
    */
-  processControlForm() {
+  processStartEndDateForm() {
     let start = moment.tz(this.controlForm.start.property('value'),
       'MM-DD-YYYY', this.timeZone);
 
@@ -319,11 +332,94 @@ class Plot {
     this.setInterval({start, end});      
   }
 
-  /*
-   * Updates the dates in the control form inputs to reflect the plot's current
-   * interval.
-   */
-  updateControlForm() {
+  // Updates the plot's controls to reflect the plot's current interval
+  updateControls() {
+    /*
+     * Colors the timespan control buttons based on the plot's timespan to
+     * clearly indicate the current zoom level. A button is fully colored if
+     * the plot's timespan exactly matches that button's timespan. If the
+     * plot's timespan does not exactly match that of a button, the buttons
+     * whose timespans are closest (longer and shorter) to the plot's timespan
+     * are partially colored on the left or right to indicate where the plot's
+     * timespan fits into the set of button timespans.
+     */
+    function updateTimespanControls() {
+      /*
+       * Sets the coloring for a timespan control button. If coloring is false,
+       * the button will not be colored.
+       */
+      function setButtonColoring(timespan, coloring) {
+        timespan.button.classed('color-left', coloring === 'left');
+        timespan.button.classed('color-center', coloring === 'center');
+        timespan.button.classed('color-right', coloring === 'right');
+      }
+      const timespans = this.controlForm.timespans;
+      // Flag to indicate when we've colored the buttons we want to color
+      let timespanColorsSet = false;
+      /*
+       * If the plot is at its maximum interval, color the max button
+       * regardless of how the plot's timespan compares to the other buttons'
+       * timespans. 
+       */
+      const maxTimespan = timespans[timespans.length - 1];
+      if (this.interval.start.isSame(this.maxInterval.start)
+        && this.interval.end.isSame(this.maxInterval.end)) {
+        setButtonColoring(maxTimespan, 'center');
+        timespanColorsSet = true;
+      } else {
+        setButtonColoring(maxTimespan, false);
+      }
+      let prevTimespan;
+      for (const timespan of timespans) {
+        if (timespan.unit === 'max') {
+          continue;
+        }
+        if (!timespanColorsSet) {
+          /*
+           * setTimeSpan prefers to subtract durations from the end of the
+           * plot's interval.  If the end of the interval is on the 31st day of
+           * a month, subtracting one month will result in an interval that
+           * starts on the 30th day of the previous month. We use subtraction
+           * from the interval's end (rather than addition to the start) here
+           * to be consistent with setTimeSpan, so that clicking on a month
+           * timespan button always causes that button to be colored (assuming
+           * the button's timespan is less than the max timespan).
+           */
+          const endMinusDuration = this.interval.end.clone().subtract(
+            timespan.duration);
+          if (+endMinusDuration === +this.interval.start) {
+            setButtonColoring(timespan, 'center');
+            timespanColorsSet = true;
+            continue;
+          } else if (+endMinusDuration < +this.interval.start) {
+            if (prevTimespan) {
+              setButtonColoring(prevTimespan, 'right');
+            }
+            setButtonColoring(timespan, 'left');
+            timespanColorsSet = true;
+            continue;
+          }
+          prevTimespan = timespan;
+        }
+        setButtonColoring(timespan, false);
+      }
+      /*
+       * If we make it through the for loop without finding a button to color,
+       * the plot's timespan must be between the max timespan and the next
+       * longest timespan
+       */
+      if (!timespanColorsSet) {
+        const penultimateTimespan = timespans[timespans.length - 2];
+        setButtonColoring(penultimateTimespan, 'right');
+        setButtonColoring(maxTimespan, 'left');
+        timespanColorsSet = true;
+      }
+    }
+
+    /* 
+     * Clear any error messages related to the date controls. Update the date
+     * controls to reflect the plot's current interval.  
+     */
     if (this.controlForm.errorMessage.text()) {
       this.controlForm.start.classed('input-error', false);
       this.controlForm.end.classed('input-error', false);
@@ -331,6 +427,8 @@ class Plot {
     }
     this.controlForm.start.property('value', this.interval.start.format('l'));
     this.controlForm.end.property('value', this.interval.end.format('l'));
+
+    updateTimespanControls.call(this);
   }
 
   /**
@@ -468,7 +566,7 @@ class Plot {
       start: moment.tz(start, this.timeZone),
       end: moment.tz(end, this.timeZone)
     };
-    this.updateControlForm();
+    this.updateControls();
 
     let loadedPromises = [];
     for (const trace of this.traces) {
@@ -532,7 +630,6 @@ class Plot {
    */
   tickOptions() {
     const delta = moment.duration(this.interval.end.diff(this.interval.start));
-
     let i;
     for (i = 0; i < this.deltaIntervalMap.length; i++) {
       if (delta < this.deltaIntervalMap[i][0]) return this.deltaIntervalMap[i][1];

@@ -40,6 +40,38 @@
 
 #timespan-control-form input {
 	margin-right: 5px;
+	border:1px solid #CCCCCC;
+	border-radius: 3px;
+	background-color: #F4F5F5;
+}
+
+#timespan-control-form input:hover {
+	border:1px solid #ADADAD;
+	background-color: #d9dddd;
+}
+
+#timespan-control-form input.color-left {
+	background-image: linear-gradient(to right, lightblue, #F4F5F5);
+}
+
+#timespan-control-form input.color-left:hover {
+	background-image: linear-gradient(to right, #8ac7db, #d9dddd);
+}
+
+#timespan-control-form input.color-center {
+	background-color: lightblue;
+}
+
+#timespan-control-form input.color-center:hover {
+	background-color: #8ac7db;
+}
+
+#timespan-control-form input.color-right {
+	background-image: linear-gradient(to right, #F4F5F5, lightblue);
+}
+
+#timespan-control-form input.color-right:hover {
+	background-image: linear-gradient(to right, #d9dddd, #8ac7db);
 }
 
 #wxplot {
