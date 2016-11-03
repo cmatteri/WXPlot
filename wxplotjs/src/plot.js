@@ -749,6 +749,7 @@ class Plot {
     this.context.stroke();
 
     // Draw vertical grid lines
+    this.context.beginPath();
     for (const tick of tickValues) {
       this.context.moveTo(this.xScale(tick), 0);
       this.context.lineTo(this.xScale(tick), this.lineBoxHeight);
@@ -782,6 +783,7 @@ class Plot {
     this.context.strokeStyle = 'black';
     this.context.stroke();
 
+    this.context.beginPath();   
     for (const tick of ticks) {
       this.context.moveTo(0, this.yScale(tick));
       this.context.lineTo(this.lineBoxWidth, this.yScale(tick));
