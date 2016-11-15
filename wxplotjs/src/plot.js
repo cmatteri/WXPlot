@@ -485,7 +485,7 @@ class Plot {
   addTrace(dataParams, legendText, color, dash, width) {
     const dataView = new DataView(Object.assign({}, dataParams))
         .setInterval((+this.interval.start), (+this.interval.end));
-    dataView.onLoaded = this.onDataViewLoaded.bind(this);
+    dataView.onDataBlockLoaded = this.onDataViewLoaded.bind(this);
 
     if (this.traces.length === 0) {
       this.initializeLegendBox();      
@@ -571,9 +571,9 @@ class Plot {
     let loadedPromises = [];
     for (const trace of this.traces) {
         trace.dataView.setInterval(start, end);
-        if (trace.dataView.isLoading()) {
+        if (trace.dataView.isLoading() && !trace.dataView.onDataBlockLoaded) {
           loadedPromises.push(new Promise((resolve, reject) => {
-            trace.dataView.onLoaded = resolve;
+            trace.dataView.onDataBlockLoaded = resolve;
           }));
         }
     }

@@ -25,7 +25,7 @@ module.exports = class DataView {
     this.nextDataBlock = null;
     this.extent = null;
     this.interval = null;
-    this.onLoaded = null;
+    this.onDataBlockLoaded = null;
     this.dataCache = null;
     this.DATABLOCK_LOAD_DELAY_MS = 100;
   }
@@ -163,9 +163,16 @@ module.exports = class DataView {
       if (this.nextDataBlock !== target) return;
       this.currentDataBlock = target;
       this.nextDataBlock = null;
-      if (this.onLoaded) this.onLoaded();
+      if (this.onDataBlockLoaded) {
+        this.onDataBlockLoaded();
+        this.onDataBlockLoaded = null;
+      }
     });
     this.nextDataBlock = target;
+    // The function referenced by onDataBlockLoaded (if any) is a callback for
+    // the loading of a different DataBlock than nextDataBlock, so it is
+    // cleared.
+    this.onDataBlockLoaded = null;
   }
 
   /*
