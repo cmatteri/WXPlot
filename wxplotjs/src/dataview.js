@@ -153,7 +153,11 @@ module.exports = class DataView {
       window.clearTimeout(this.timeoutID);
     }
 
-    // The new DataBlock is not loaded immediately. If the user is rapidly zooming in or out it doesn't make sense to load intermediate data blocks because they probably won't load fast enough for smooth zooming and they flood the server with requests, making the data at the final zoom level load more slowly.
+    // The new DataBlock is not loaded immediately. If the user is rapidly
+    // zooming in or out it doesn't make sense to load intermediate data blocks
+    // because they probably won't load fast enough for smooth zooming and they
+    // flood the server with requests, making the data at the final zoom level
+    // load more slowly.
     this.timeoutID = window.setTimeout((segmentCache, onLoaded) => {
       this.timeoutID = null;
       target.load.call(target, segmentCache, onLoaded);
@@ -164,8 +168,13 @@ module.exports = class DataView {
       this.currentDataBlock = target;
       this.nextDataBlock = null;
       if (this.onDataBlockLoaded) {
-        this.onDataBlockLoaded();
+        // this.onDataBlockLoaded must be set to null because the DataBlock it
+        // corresponds to has loaded. We need to set this.onDataBlockLoaded to
+        // null before calling the callback, since the callback may change this
+        // DataView's interval and set this.onDataBlockLoaded.
+        const callback = this.onDataBlockLoaded;
         this.onDataBlockLoaded = null;
+        callback();
       }
     });
     this.nextDataBlock = target;
