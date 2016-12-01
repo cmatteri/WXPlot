@@ -167,7 +167,7 @@ class Plot {
       - parseFloat(plotStyle.paddingRight);
     this.height = parseFloat(plotStyle.height);
     const LINE_HEIGHT = 1.2;
-    const textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
+    this.textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
 
     // To produce a crisp image, the dimensions of the canvas buffer should
     // equal the dimensions in physical pixels of the rendered canvas on the
@@ -184,11 +184,11 @@ class Plot {
     const zeroWidthPx = this.context.measureText('0').width;
 
     this.margin = {
-      top: Math.ceil(textHeightPx / 2),
+      top: Math.ceil(this.textHeightPx / 2),
       right: 0,
-      bottom: Math.ceil(textHeightPx + TICK_SIZE_IN_PX),
+      bottom: Math.ceil(this.textHeightPx + TICK_SIZE_IN_PX),
       // The last 2 px are extra padding
-      left: Math.ceil(textHeightPx + TICK_SIZE_IN_PX + TICK_PADDING_IN_PX
+      left: Math.ceil(this.textHeightPx + TICK_SIZE_IN_PX + TICK_PADDING_IN_PX
         + this.yTickLabelChars*zeroWidthPx + 2)};
     this.traceBoxWidth = this.width - this.margin.left - this.margin.right;
     this.traceBoxHeight = this.height - this.margin.top - this.margin.bottom;
@@ -212,7 +212,7 @@ class Plot {
         .on('zoom', this.zoomed.bind(this));
     this.canvas.call(this.zoom);
 
-    this.yTickCount = Math.floor(this.height / (textHeightPx + 36));
+    this.yTickCount = Math.floor(this.height / (this.textHeightPx + 36));
   }
 
   // Creates the input elements used to control/display the plot's interval
@@ -509,15 +509,16 @@ class Plot {
     const canvas = legendDiv.append('canvas')
     const span = legendDiv.append('span')
         .text(legendText);
-    const textHeight = span.node().offsetHeight
-    const ctx = canvas.attr('width', LEGEND_LINE_LEN)
-        .attr('height', textHeight)
-        .node()
-        .getContext('2d');
-
-    ctx.beginPath();     
-    ctx.moveTo(0, textHeight / 2);
-    ctx.lineTo(LEGEND_LINE_LEN, textHeight / 2);
+    canvas.attr('width', LEGEND_LINE_LEN * window.devicePixelRatio)
+        .attr('height', this.textHeightPx * window.devicePixelRatio)
+        .style('width', LEGEND_LINE_LEN + 'px')
+        .style('height', this.textHeightPx + 'px')
+    const ctx = canvas.node().getContext('2d');
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    ctx.beginPath();
+    const lineHeight = Math.round(this.textHeightPx / 2) + 0.5;
+    ctx.moveTo(0, lineHeight);
+    ctx.lineTo(LEGEND_LINE_LEN, lineHeight);
     ctx.lineWidth = width;
     ctx.setLineDash(dash);
     ctx.strokeStyle = color;
