@@ -70,8 +70,8 @@ A weather data plot.
 **Kind**: global class  
 
 * [Plot](#Plot)
-    * [new Plot(root, timeZone, yLabel, interval, maxInterval, options)](#new_Plot_new)
-    * [.setInterval(interval)](#Plot+setInterval)
+    * [new Plot(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars, interval, maxInterval, options)](#new_Plot_new)
+    * [.setInterval(start, end)](#Plot+setInterval)
     * [.setYLabel(label)](#Plot+setYLabel) ⇒ <code>[Plot](#Plot)</code>
     * [.addTrace(dataParams, legendText, color, dash, width)](#Plot+addTrace) ⇒ <code>[Plot](#Plot)</code>
     * [.getTraces()](#Plot+getTraces) ⇒ <code>Array</code>
@@ -79,13 +79,15 @@ A weather data plot.
 
 <a name="new_Plot_new"></a>
 
-### new Plot(root, timeZone, yLabel, interval, maxInterval, options)
+### new Plot(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars, interval, maxInterval, options)
 
 | Param | Type | Description |
 | --- | --- | --- |
-| root | <code>d3.Selection</code> | Selection the plot will be appended to (as a div) |
+| controlRoot | <code>d3.Selection</code> | The selection the timespan and interval controls will be appended to |
+| canvasRoot | <code>d3.Selection</code> | The selection the canvas, which contains the axes and traces, will be appended to |
 | timeZone | <code>String</code> | Time zone identifier corresponding to the time zone of the weather station, e.g. 'America/Los_Angeles' |
 | yLabel | <code>String</code> | Label for the vertical axis |
+| yTickLabelChars | <code>Number</code> | The y-axis tick labels will have space for at least this many '0' characters. See the yTicks function comment for details on the formatting of these labels. |
 | interval | <code>Object</code> | Specifies the initial time interval to display e.g. ```{   start: +(new Date("1/1/2015")),   end: +(new Date("1/1/2016")) };``` |
 | interval.start | <code>Number</code> | Unix time of the start of the interval in ms. |
 | interval.end | <code>Number</code> | Unix time of the end of the interval in ms. |
@@ -96,16 +98,15 @@ A weather data plot.
 
 <a name="Plot+setInterval"></a>
 
-### plot.setInterval(interval)
+### plot.setInterval(start, end)
 Sets the plot's interval
 
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| interval | <code>Object</code> |  |
-| interval.start | <code>Number</code> | Unix time of the start of the interval in ms. |
-| interval.end | <code>Number</code> | Unix time of the end of the interval in ms. |
+| start | <code>Number</code> | Unix time of the start of the interval in ms. |
+| end | <code>Number</code> | Unix time of the end of the interval in ms. |
 
 <a name="Plot+setYLabel"></a>
 

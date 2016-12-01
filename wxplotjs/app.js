@@ -6,7 +6,6 @@ var app = koa();
 
 app.use(serve(__dirname + '/test'));
 app.use(serve(__dirname + '/css'));
-app.use(serve(__dirname + '/dev'));
 app.use(serve(__dirname + '/bin'));
 
 app.use(mount('/weewx', proxy({

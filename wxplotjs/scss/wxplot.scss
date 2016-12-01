@@ -1,0 +1,88 @@
+.wxplot-input-error {
+	border-color: red;
+}
+
+.wxplot-interval-control {
+	margin: 2px;
+
+	label {
+		margin-right: 3px;
+	}
+
+	input {
+		width: 6rem;
+	}
+}
+
+div.wxplot-interval-control {
+	display: inline-block;
+	margin-right: 10px;
+}
+
+.wxplot-error-message {
+	color: red;
+}
+
+.wxplot-legend {
+	border: 1px solid black;
+	display: inline-block;
+	margin: 2px;
+	padding: 2px;
+
+	& > canvas {
+		margin-right: 5px;
+		vertical-align: text-bottom;
+	}
+}
+
+#wxplot-timespan-control-form {
+	margin: 2px;
+
+	input {
+		margin: 3px;
+		border:1px solid #CCCCCC;
+		border-radius: 3px;
+		background-color: #F4F5F5;
+		-webkit-appearance: none;
+
+		&:hover {
+			border:1px solid #ADADAD;
+			background-color: #d9dddd;
+		}
+
+		&.color-left {
+			background-image: linear-gradient(to right, lightblue, #F4F5F5);
+
+			&:hover {
+				background-image: linear-gradient(to right, #8ac7db, #d9dddd);
+			}
+		}
+
+		&.color-center {
+			background-color: lightblue;
+
+			&:hover {
+				background-color: #8ac7db;
+			}
+		}
+
+		&.color-right {
+			background-image: linear-gradient(to right, #F4F5F5, lightblue);
+			&:hover {
+				background-image: linear-gradient(to right, #d9dddd, #8ac7db);
+			}
+		}
+	}
+}
+
+#wxplot-controls, #wxplot-canvas {
+	font-family: sans-serif;
+}
+
+#wxplot-controls input {
+	font: 1rem sans-serif;
+}
+
+#wxplot-canvas {
+	padding-right: 3px;
+}

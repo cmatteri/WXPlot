@@ -23,8 +23,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "mkdir -p bin; browserify -r ./src/plot.js:wxplot -t babelify | uglifyjs > bin/wxplot.min.js",
-    "watch": "mkdir -p dev; watchify -v -d -r ./src/plot.js:wxplot -t babelify -o dev/wxplot.js"
+    "watch": "mkdir -p bin; watchify -v -d ./src/test.js -t babelify -o bin/wxplot-test.js"
   },
   "author": "Chris Matteri",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "css-element-queries": "^0.3.2"
+  }
 }

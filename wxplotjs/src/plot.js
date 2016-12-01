@@ -1,15 +1,23 @@
 let DataView = require('./dataview.js');
 
+const TICK_SIZE_IN_PX = 6;
+const TICK_PADDING_IN_PX = 3;
+
 /**
  * A weather data plot.
  */
 class Plot {
   /**
-   * @param {d3.Selection} root - Selection the plot will be appended to (as a
-   * div)
+   * @param {d3.Selection} controlRoot - The selection the timespan and
+   * interval controls will be appended to
+   * @param {d3.Selection} canvasRoot - The selection the canvas, which
+   * contains the axes and traces, will be appended to
    * @param {String} timeZone - Time zone identifier corresponding to the time
    * zone of the weather station, e.g. 'America/Los_Angeles'
    * @param {String} yLabel - Label for the vertical axis
+   * @param {Number} yTickLabelChars - The y-axis tick labels will have space
+   * for at least this many '0' characters. See the yTicks function comment for
+   * details on the formatting of these labels.
    * @param {Object} interval - Specifies the initial time interval to display
    * e.g. ```{
    *   start: +(new Date("1/1/2015")),
@@ -28,36 +36,49 @@ class Plot {
    * lines that pass through all data points and do not introduce minima or
    * maxima between points).
    */
-  constructor(root, timeZone, yLabel, interval, maxInterval, options) {
+  constructor(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars,
+      interval, maxInterval, options) {
+    this.controls = controlRoot.append('div')
+        .attr('id', 'wxplot-controls');
+    this.canvasRoot = canvasRoot;
     this.timeZone = timeZone;
     this.yLabel = yLabel;
-    this.maxInterval = {
-      start: moment.tz(maxInterval.start, timeZone),
-      end: moment.tz(maxInterval.end, timeZone)
-    };
-    this.tickReferenceTime = this.maxInterval.start.clone().startOf('year');
-    this.traces = [];
-    this.margin = {top: 20, right: 0, bottom: 60, left: 50};
-    this.width = 960;
-    this.height = 500;
-    this.lineBoxWidth = this.width - this.margin.left - this.margin.right;
-    this.lineBoxHeight = this.height - this.margin.top - this.margin.bottom;
-    this.options = options ? options : {};
-
+    this.yTickLabelChars = yTickLabelChars;
     this.interval = {
       start: moment.tz(interval.start, timeZone),
       end: moment.tz(interval.end, timeZone)
     };
+    this.maxInterval = {
+      start: moment.tz(maxInterval.start, timeZone),
+      end: moment.tz(maxInterval.end, timeZone)
+    };
+    this.options = options ? options : {};
+
+    this.tickReferenceTime = this.maxInterval.start.clone().startOf('year');
+
+    this.traces = [];
+
+    this.initializeControls();
+    // Creates the legend, which is a set of line samples and accompanying
+    // textual descriptions. The line samples are drawn on small Canvases so
+    // the samples look exactly the same as the actual lines.
+    this.legendBox = this.controls.append('div');
+    this.updateControls();
+
+    let minIntervalLength;
+    if ('minIntervalLength' in this.options) {
+      this.minIntervalLength = this.options.minIntervalLength;
+    } else {
+      // One hour in ms
+      this.minIntervalLength = 3600000;
+    }
 
     this.xScale = d3.scaleLinear()
-        .domain([interval.start, interval.end])
-        .range([0, this.lineBoxWidth]);
-    this.origXScale = this.xScale;
+        .domain([interval.start, interval.end]);
 
     this.yScale = d3.scaleLinear()
-        .domain([0, 10])
-        .range([this.lineBoxHeight, 0]);
-     
+        .domain([0, 10]);
+
     this.lineGenerator = d3.line()
         .defined(function(d) { return d[1] != null; })
         .x((d) => { return this.xScale(d[0]); })
@@ -69,52 +90,17 @@ class Plot {
       // curve passes through all data points.
       this.lineGenerator.curve(d3.curveMonotoneX);
     }
-    
-    this.plotDiv = root.append('div')
-        .attr('id', 'wxplot')
-    this.initializeControls();
-    this.updateControls();
 
-    let minIntervalLength;
-    if ('minIntervalLength' in this.options) {
-      minIntervalLength = this.options.minIntervalLength;
-    } else {
-      // One hour in ms
-      minIntervalLength = 3600000;
-    }
+    this.initializeCanvas();
 
-    const minScale = (interval.end - interval.start) / (maxInterval.end - maxInterval.start);
-    const maxScale = (interval.end - interval.start) / minIntervalLength;
-    this.zoom = d3.zoom()
-        .extent([[0, 0], [this.lineBoxWidth, this.lineBoxHeight]])
-        .scaleExtent([minScale, maxScale])
-        .translateExtent([[this.origXScale(maxInterval.start), 0],
-          [this.origXScale(maxInterval.end), this.height]])
-        .on('zoom', this.zoomed.bind(this));
-
-    /* 
-     * To produce a crisp image, the dimensions of the canvas buffer should
-     * equal the dimensions in pixels of the rendered canvas on the screen of
-     * the user's device. To accomplish this the dimensions of the canvas are
-     * scaled by devicePixelRatio and a style is used to force the logical size
-     * of the canvas to the original unscaled dimensions. The dimenions of the 
-     * rendered canvas will equal its logical dimensions multiplied by the
-     * devicePixelRatio, which is exactly the size of the canvas buffer. The
-     * context is scaled so the canvas can be treated as if had its original
-     * unscaled dimensions when drawing.
-     */
-    this.canvas = this.plotDiv.append('canvas')
-        .attr('width', devicePixelRatio * this.width)
-        .attr('height', devicePixelRatio * this.height)
-        .style('width', this.width + 'px')
-        .call(this.zoom);
-
-    this.context = this.canvas.node().getContext('2d');
-    this.context.scale(devicePixelRatio, devicePixelRatio);
-    this.context.translate(this.margin.left, this.margin.top);
-    this.TEXT_SIZE = 10;
-    this.context.font = this.TEXT_SIZE + 'px sans-serif';
-    this.lineGenerator.context(this.context);
+    // When the div that holds the canvas is resized, replace the canvas with a
+    // new one of the correct size.
+    const ResizeSensor = require('css-element-queries/src/ResizeSensor');
+    new ResizeSensor(canvasRoot.node(), () => {
+      this.canvas.remove();
+      this.initializeCanvas();
+      this.render();}
+    );
 
     /*    
      * This structure is used to determine the period of x-axis ticks and their
@@ -123,69 +109,120 @@ class Plot {
      * should be hours, days, months, or years. If the unit is hours or days
      * there is an additional constraint described by the firstTick function.
      */
-    this.deltaIntervalMap = [
-        [moment.duration(12, 'hours'), {
-          format: this.makeTickFormatter('h A'),
-          period: {value: 1, unit: 'h'}
-        }],
-        [moment.duration(1.5, 'days'), {
-          format: this.makeTickFormatter('MMM D h A'),
-          period: {value: 3, unit:'h'}
-        }],
-        [moment.duration(3, 'days'), {
-          format: this.makeTickFormatter('MMM D h A'),
-          period: {value: 6, unit:'h'}
-        }],
-        [moment.duration(6, 'days'), {
-          format: this.makeTickFormatter('MMM D h A'),
-          period: {value: 12, unit:'h'}
-        }],
-        [moment.duration(23, 'days'), {
-          format: this.makeTickFormatter('MMM D'),
-          period: {value: 1, unit:'d'}
-        }],   
-        [moment.duration(60, 'days'), {
-          format: this.makeTickFormatter('MMM D'),
-          period: {value: 3, unit:'d'}
-        }],   
-        [moment.duration(200, 'days'), {
-          format: this.makeTickFormatter('MMM D'),
-          period: {value: 9, unit:'d'}
-        }],  
-        [moment.duration(1.5, 'years'), {
-          format: this.makeTickFormatter('MMM YYYY'),
-          period: {value: 1, unit:'M'}
-        }],
-        [moment.duration(5, 'years'), {
-          format: this.makeTickFormatter('MMM YYYY'),
-          period: {value: 4, unit:'M'}
-        }],
-        [moment.duration(0), {
-          format: this.makeTickFormatter('YYYY'),
-          period: {value: 1, unit:'Y'}
-        }]
+    this.xTickPeriods = [{
+        format: 'h A',
+        period: {value: 1, unit: 'h'}
+      }, {
+        format: 'MMM D h A',
+        period: {value: 3, unit:'h'}
+      }, {
+        format: 'MMM D h A',
+        period: {value: 6, unit:'h'}
+      }, {
+        format: 'MMM D h A',
+        period: {value: 12, unit:'h'}
+      }, {
+        format: 'MMM D',
+        period: {value: 1, unit:'d'}
+      }, {
+        format: 'MMM D',
+        period: {value: 3, unit:'d'}
+      }, {
+        format: 'MMM D',
+        period: {value: 9, unit:'d'}
+      }, {
+        format: 'MMM YYYY',
+        period: {value: 1, unit:'M'}
+      }, {
+        format: 'MMM YYYY',
+        period: {value: 4, unit:'M'}
+      }, {
+        format: 'YYYY',
+        period: {value: 1, unit:'Y'}
+      }
     ];
+
+    const example = moment('2000-12-10 12:10:10');
+    for (const xTickParams of this.xTickPeriods) {
+      const tickLabel = example.format(xTickParams.format);
+      xTickParams.maxWidthInPx = this.context.measureText(tickLabel).width;
+      xTickParams.formatter = this.makeTickFormatter(xTickParams.format);
+      xTickParams.duration = moment.duration(xTickParams.period.value,
+        xTickParams.period.unit)
+    }
   }
 
-  /*
-   * Creates the legend, which is a set of line samples and accompanying textual
-   * descriptions. The line samples are drawn on small Canvases so that the
-   * samples look exactly the same as the actual lines.
-   */
-  initializeLegendBox() {
-    this.legendBox = this.plotDiv.append('div')
-        .attr('id', 'legend-box');
+  // Creates a canvas for drawing the plot's axes and traces. The size of the
+  // canvas is set in CSS and an appropriate size is calculated for canvas
+  // buffer. The canvas's area is divided into the traceBox, which contains the
+  // traces, and the margins, which contain the axes. initializeCanvas
+  // calculates the size of the margins. It adjusts the D3 scales based on size
+  // of traceBox. It also creates a D3 zoom to allow panning and zooming the
+  // plot.
+  initializeCanvas(yTickLabelChars) {
+    this.canvas = this.canvasRoot.append('canvas')
+        .attr('id', 'wxplot-canvas');
+    const plotStyle = getComputedStyle(this.canvas.node());
+    this.width = parseFloat(plotStyle.width)
+      - parseFloat(plotStyle.paddingRight);
+    this.height = parseFloat(plotStyle.height);
+    const LINE_HEIGHT = 1.2;
+    const textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
+
+    // To produce a crisp image, the dimensions of the canvas buffer should
+    // equal the dimensions in physical pixels of the rendered canvas on the
+    // screen of the user's device. To accomplish this the canvas buffer is set
+    // to its CSS dimensions multiplied by devicePixelRatio. The context is
+    // scaled so the canvas can be treated as if it had its CSS dimensions when
+    // drawing.
+    this.canvas.attr('width', devicePixelRatio * this.width)
+        .attr('height', devicePixelRatio * this.height);
+
+    this.context = this.canvas.node().getContext('2d');
+    this.context.font = plotStyle['font-size'] + ' '
+      + plotStyle['font-family'];
+    const zeroWidthPx = this.context.measureText('0').width;
+
+    this.margin = {
+      top: Math.ceil(textHeightPx / 2),
+      right: 0,
+      bottom: Math.ceil(textHeightPx + TICK_SIZE_IN_PX),
+      // The last 2 px are extra padding
+      left: Math.ceil(textHeightPx + TICK_SIZE_IN_PX + TICK_PADDING_IN_PX
+        + this.yTickLabelChars*zeroWidthPx + 2)};
+    this.traceBoxWidth = this.width - this.margin.left - this.margin.right;
+    this.traceBoxHeight = this.height - this.margin.top - this.margin.bottom;
+    this.context.scale(devicePixelRatio, devicePixelRatio);
+    this.context.translate(this.margin.left, this.margin.top);
+
+    this.xScale.range([0, this.traceBoxWidth]);
+    this.origXScale = this.xScale;
+    this.yScale.range([this.traceBoxHeight, 0]);
+    this.lineGenerator.context(this.context);
+
+    const minScale = (this.interval.end - this.interval.start) 
+      / (this.maxInterval.end - this.maxInterval.start);
+    const maxScale = (this.interval.end - this.interval.start)
+      / this.minIntervalLength;
+    this.zoom = d3.zoom()
+        .extent([[0, 0], [this.traceBoxWidth, this.traceBoxHeight]])
+        .scaleExtent([minScale, maxScale])
+        .translateExtent([[this.origXScale(this.maxInterval.start), 0],
+          [this.origXScale(this.maxInterval.end), this.height]])
+        .on('zoom', this.zoomed.bind(this));
+    this.canvas.call(this.zoom);
+
+    this.yTickCount = Math.floor(this.height / (textHeightPx + 36));
   }
 
   // Creates the input elements used to control/display the plot's interval
   initializeControls() {
     // Add inputs to set/display the plot's start and end date
-    const startEndDateForm = this.plotDiv.append('form');
-    startEndDateForm.attr('id', 'interval-control-form');
-
-    startEndDateForm.append('label')
-        .text('Start Date:');
-    const start = startEndDateForm.append('input')
+    const startControl = this.controls.append('div')
+        .classed('wxplot-interval-control', true);
+    startControl.append('label')
+        .text('Start:');
+    const start = startControl.append('input')
         .attr('type', 'text')
         .on('keypress', () => {
           if(d3.event.which === 13) {
@@ -194,9 +231,11 @@ class Plot {
           }
         });
 
-    startEndDateForm.append('label')
-        .text('End Date:');
-    const end = startEndDateForm.append('input')
+    const endControl = this.controls.append('div')
+        .classed('wxplot-interval-control', true);
+    endControl.append('label')
+        .text('End:');
+    const end = endControl.append('input')
         .attr('type', 'text')
         .on('keypress', () => {
           if(d3.event.which === 13) {
@@ -205,12 +244,12 @@ class Plot {
           }
         });
 
-    const errorMessage = startEndDateForm.append('label')
-      .classed('error-message', true);
+    const errorMessage = this.controls.append('label')
+      .classed('wxplot-error-message', true);
 
     // Add a row of buttons to control the timespan
-    const timespanForm = this.plotDiv.append('form')
-    timespanForm.attr('id', 'timespan-control-form')
+    const timespanForm = this.controls.append('form')
+    timespanForm.attr('id', 'wxplot-timespan-control-form')
 
     const timespans = [
       {value: 1, unit:'d'},
@@ -233,10 +272,7 @@ class Plot {
       if (timespan.unit === 'max') {
         button.attr('value', 'max')
         .on('click', () => {
-          this.setInterval({
-            start: +this.maxInterval.start,
-            end: +this.maxInterval.end
-          });
+          this.setInterval(+this.maxInterval.start, +this.maxInterval.end);
           button.node().blur()
         })
       } else {
@@ -271,24 +307,15 @@ class Plot {
     const possibleStart = this.interval.end.clone().subtract(timespan)
     if (possibleStart.isSameOrAfter(this.maxInterval.start)) {
       // we good
-      this.setInterval({
-        start: +possibleStart,
-        end: +this.interval.end
-      })
+      this.setInterval(+possibleStart, +this.interval.end)
       return;
     } else {
       const possibleEnd = this.maxInterval.start.clone().add(timespan)
       if (possibleEnd.isSameOrBefore(this.maxInterval.end)) {
         // we good
-        this.setInterval({
-          start: +this.maxInterval.start,
-          end: +possibleEnd
-        })
+        this.setInterval(+this.maxInterval.start, +possibleEnd)
       } else {
-        this.setInterval({
-          start: +this.maxInterval.start,
-          end: +this.maxInterval.end
-        })
+        this.setInterval(+this.maxInterval.start, +this.maxInterval.end)
       }
     }
   }
@@ -306,43 +333,33 @@ class Plot {
       'MM-DD-YYYY', this.timeZone);
 
     if (!start.isValid() || !end.isValid()) {
-      this.controlForm.start.classed('input-error', !start.isValid());
-      this.controlForm.end.classed('input-error', !end.isValid());
+      this.controlForm.start.classed('wxplot-input-error', !start.isValid());
+      this.controlForm.end.classed('wxplot-input-error', !end.isValid());
       this.controlForm.errorMessage.text('Invalid Date (must have format MM/DD/YYYY)');
       return;
     }
 
     if (start >= end) {
-      this.controlForm.start.classed('input-error', true);
-      this.controlForm.end.classed('input-error', true);
+      this.controlForm.start.classed('wxplot-input-error', true);
+      this.controlForm.end.classed('wxplot-input-error', true);
       this.controlForm.errorMessage.text('Start must be before end.');
       return;
     }
 
-    this.controlForm.start.classed('input-error', false);
-    this.controlForm.end.classed('input-error', false);
-
-    if (start < this.maxInterval.start) {
-      start = this.maxInterval.start;
-    }
-    if (end > this.maxInterval.end) {
-      end = this.maxInterval.end;
-    }
+    this.controlForm.start.classed('wxplot-input-error', false);
+    this.controlForm.end.classed('wxplot-input-error', false);
     this.controlForm.errorMessage.text('');
-    this.setInterval({start, end});      
+    this.setInterval(start, end);      
   }
 
   // Updates the plot's controls to reflect the plot's current interval
   updateControls() {
-    /*
-     * Colors the timespan control buttons based on the plot's timespan to
-     * clearly indicate the current zoom level. A button is fully colored if
-     * the plot's timespan exactly matches that button's timespan. If the
-     * plot's timespan does not exactly match that of a button, the buttons
-     * whose timespans are closest (longer and shorter) to the plot's timespan
-     * are partially colored on the left or right to indicate where the plot's
-     * timespan fits into the set of button timespans.
-     */
+    // Colors the timespan control buttons based on the plot's timespan to
+    // clearly indicate the current zoom level. A button is fully colored if
+    // the plot's timespan is within 5% of that button's timespan. Otherwise
+    // the buttons whose timespans are closest (longer and/or shorter) to the
+    // plot's timespan are partially colored on the left or right to indicate
+    // where the plot's timespan fits into the set of button timespans.
     function updateTimespanControls() {
       /*
        * Sets the coloring for a timespan control button. If coloring is false,
@@ -375,23 +392,13 @@ class Plot {
           continue;
         }
         if (!timespanColorsSet) {
-          /*
-           * setTimeSpan prefers to subtract durations from the end of the
-           * plot's interval.  If the end of the interval is on the 31st day of
-           * a month, subtracting one month will result in an interval that
-           * starts on the 30th day of the previous month. We use subtraction
-           * from the interval's end (rather than addition to the start) here
-           * to be consistent with setTimeSpan, so that clicking on a month
-           * timespan button always causes that button to be colored (assuming
-           * the button's timespan is less than the max timespan).
-           */
-          const endMinusDuration = this.interval.end.clone().subtract(
-            timespan.duration);
-          if (+endMinusDuration === +this.interval.start) {
+          const diff = +this.interval.end - +this.interval.start;
+          if (0.95 * timespan.duration < diff
+              && diff < 1.05 * timespan.duration) {
             setButtonColoring(timespan, 'center');
             timespanColorsSet = true;
             continue;
-          } else if (+endMinusDuration < +this.interval.start) {
+          } else if (diff < timespan.duration) {
             if (prevTimespan) {
               setButtonColoring(prevTimespan, 'right');
             }
@@ -421,8 +428,8 @@ class Plot {
      * controls to reflect the plot's current interval.  
      */
     if (this.controlForm.errorMessage.text()) {
-      this.controlForm.start.classed('input-error', false);
-      this.controlForm.end.classed('input-error', false);
+      this.controlForm.start.classed('wxplot-input-error', false);
+      this.controlForm.end.classed('wxplot-input-error', false);
       this.controlForm.errorMessage.text('')
     }
     this.controlForm.start.property('value', this.interval.start.format('l'));
@@ -433,14 +440,23 @@ class Plot {
 
   /**
    * Sets the plot's interval
-   * @param {Object} interval
-   * @param {Number} interval.start - Unix time of the start of the interval in
-   * ms.
-   * @param {Number} interval.end - Unix time of the end of the interval in ms.
+   * @param {Number} start - Unix time of the start of the interval in ms.
+   * @param {Number} end - Unix time of the end of the interval in ms.
    */
-  setInterval(interval) {
-    const startX = this.origXScale(interval.start);
-    const endX = this.origXScale(interval.end);
+  setInterval(start, end) {
+    if (start < this.maxInterval.start) {
+      start = this.maxInterval.start;
+    }
+    if (end > this.maxInterval.end) {
+      end = this.maxInterval.end;
+    }
+    // The current interval is determined by the D3 zoom behavior that was
+    // applied to the canvas. this.interval merely caches the start and end of
+    // the interval. To change the interval, we must change the zoom. Zoom is
+    // stored as a transformation of the initial scale, so we must calculate
+    // the transformation that yields the desired interval.
+    const startX = this.origXScale(start);
+    const endX = this.origXScale(end);
     const baseRange = this.origXScale.range();
     const scaleFactor = (baseRange[1] - baseRange[0]) / (endX - startX);
     const xShift = scaleFactor*baseRange[0] - startX;
@@ -485,34 +501,31 @@ class Plot {
   addTrace(dataParams, legendText, color, dash, width) {
     const dataView = new DataView(Object.assign({}, dataParams))
         .setInterval((+this.interval.start), (+this.interval.end));
-    dataView.onDataBlockLoaded = this.onDataViewLoaded.bind(this);
+    dataView.onDataBlockLoaded = this.render.bind(this);
 
-    if (this.traces.length === 0) {
-      this.initializeLegendBox();      
-    }
-
-    const p = this.legendBox.append('p');
+    const legendDiv = this.legendBox.append('div')
+        .classed('wxplot-legend', true);
     const LEGEND_LINE_LEN = 20;
-    const ctx = p.append('canvas')
-        .attr('width', LEGEND_LINE_LEN)
-        .attr('height', this.TEXT_SIZE)
+    const canvas = legendDiv.append('canvas')
+    const span = legendDiv.append('span')
+        .text(legendText);
+    const textHeight = span.node().offsetHeight
+    const ctx = canvas.attr('width', LEGEND_LINE_LEN)
+        .attr('height', textHeight)
         .node()
         .getContext('2d');
 
     ctx.beginPath();     
-    ctx.moveTo(0, this.TEXT_SIZE / 2);
-    ctx.lineTo(LEGEND_LINE_LEN, this.TEXT_SIZE / 2);
+    ctx.moveTo(0, textHeight / 2);
+    ctx.lineTo(LEGEND_LINE_LEN, textHeight / 2);
     ctx.lineWidth = width;
     ctx.setLineDash(dash);
     ctx.strokeStyle = color;
-    ctx.stroke(); 
-
-    p.append('span')
-        .text(legendText);
+    ctx.stroke();
 
     this.traces.push({
         legendText,
-        legend: p,
+        legendDiv,
         width,
         color,
         dash,
@@ -539,13 +552,12 @@ class Plot {
   removeTrace(legendText) {
     this.traces = this.traces.filter(trace => {
       if(trace.legendText === legendText) {
-        trace.legend.remove()
+        trace.legendDiv.remove()
         return false;
       }
       return true;
     });
     
-    this.updateYScale();
     this.render();
     return this;
   }
@@ -561,16 +573,23 @@ class Plot {
     const start = this.xScale.invert(0);
 
     // The latest visible time.
-    const end = this.xScale.invert(this.lineBoxWidth); 
+    const end = this.xScale.invert(this.traceBoxWidth); 
     this.interval = {
       start: moment.tz(start, this.timeZone),
       end: moment.tz(end, this.timeZone)
     };
     this.updateControls();
 
+    // Create a promise for each trace that needs data from the server that
+    // resolves once the data has loaded. Promise.all is used to redraw the
+    // plot exactly once when all data has loaded.
     let loadedPromises = [];
     for (const trace of this.traces) {
         trace.dataView.setInterval(start, end);
+        // Don't create a promise for the loading of a DataBlock if we already
+        // created one in a previous zoomed call (which happens because
+        // multiple plot intervals may map to the same DataBlock), as indicated
+        // by dataView.onDataBlockLoaded being non-null.
         if (trace.dataView.isLoading() && !trace.dataView.onDataBlockLoaded) {
           loadedPromises.push(new Promise((resolve, reject) => {
             trace.dataView.onDataBlockLoaded = resolve;
@@ -579,10 +598,9 @@ class Plot {
     }
     if (loadedPromises.length > 0) {
       const allTracesLoaded = Promise.all(loadedPromises);
-      allTracesLoaded.then(this.onDataViewLoaded.bind(this));
+      allTracesLoaded.then(this.render.bind(this));
     }
 
-    this.updateYScale()
     this.render();
   }
 
@@ -595,20 +613,29 @@ class Plot {
     for (const trace of this.traces) {
       if (!trace.dataView.isLoaded()) continue;
       let data = trace.dataView.getDisplayData();
-      extents.push(d3.extent(data, d => d[1]));
+      if (data.length > 0) {
+        extents.push(d3.extent(data, d => d[1]));
+      }
+    }
+
+    // If we don't have any points, leave the y scale as it is.
+    if (extents.length === 0) {
+      return;
     }
 
     /*
      * The extents array is flattened and the extent of this flattened array is
      * determined to get the extent of all traces.
      */
-    this.yScale.domain(d3.extent([].concat.apply([], extents)));
-  }
-
-  // Callback used to re-draw the plot when data is loaded asynchronously
-  onDataViewLoaded(){
-    this.updateYScale();
-    this.render();
+    const newYDomain = d3.extent([].concat.apply([], extents));
+    /*
+     * D3 only generates ticks for the y-axis if the domain has a distinct
+     * beginning and end. The following check ensures the y-axis will have
+     * labels if the extent of y values is a single point.
+     */
+    if (newYDomain[0] != newYDomain[1]) {
+      this.yScale.domain(newYDomain);
+    }
   }
 
   /*
@@ -629,13 +656,15 @@ class Plot {
    * returned by makeTickFormatter, which is used to format tick labels.
    */
   tickOptions() {
-    const delta = moment.duration(this.interval.end.diff(this.interval.start));
-    let i;
-    for (i = 0; i < this.deltaIntervalMap.length; i++) {
-      if (delta < this.deltaIntervalMap[i][0]) return this.deltaIntervalMap[i][1];
+    const MIN_LABEL_PADDING_IN_PX = 20;
+    for (const xTickPeriod of this.xTickPeriods) {
+      const typicalTickSpacingInPx = this.xScale(+xTickPeriod.duration)
+        - this.xScale(0);
+      if (typicalTickSpacingInPx >
+          xTickPeriod.maxWidthInPx + MIN_LABEL_PADDING_IN_PX) {
+        return xTickPeriod;
+      }
     }
-
-    return this.deltaIntervalMap[i - 1][1];
   }
 
   /*
@@ -661,15 +690,18 @@ class Plot {
     var unit = tickPeriod.unit;
 
     var roundedTime = time.clone().startOf(unit);
-
+    if (!roundedTime.isSame(time)) {
+      roundedTime.add(1, unit);
+    }
     if (unit === 'h' || unit === 'M') {
-      // The tick period may be several hours. We 
       return roundedTime.set(unit, 
-        Math.floor(time.get(unit) / period) * period);
+        Math.ceil(roundedTime.get(unit) / period) * period);
     } else {
-      const offset = roundedTime.diff(this.tickReferenceTime, tickPeriod.unit)
-        % tickPeriod.value;
-      return roundedTime.add(tickPeriod.value - offset, tickPeriod.unit);
+      const offset = roundedTime.diff(this.tickReferenceTime, unit) % period;
+      if (offset === 0) {
+        return roundedTime;
+      }
+      return roundedTime.add(period - offset, unit);
     }
   }
 
@@ -697,7 +729,6 @@ class Plot {
 
     var ticks = [];
     var tick = this.firstTick(tickOpts.period);
-    var period = moment.duration(tickOpts.period.value, tickOpts.period.unit);
     while (tick.isSameOrBefore(this.interval.end)) {
       ticks.push(+tick);
       if (tickOpts.period.unit === 'h' && tickOpts.period.value > 1) {
@@ -706,41 +737,87 @@ class Plot {
         if (hours >= 24) tick.add(1, 'd');
         tick.hours(hours % 24);
       } else {
-        tick.add(period);
+        tick.add(tickOpts.duration);
       }
     }
     return {
-      format: tickOpts.format,
+      params: tickOpts,
       ticks: ticks,
     };
   }
 
+  // Calculates the period of the y-axis tick marks. The period will be 1, 2,
+  // or 5 times 10**n where n is an integer.
+  // @returns {Object} The value property holds the calculated period. The
+  // exponent property holds the value of n, which is used for formatting.
+  yTickPeriod() {
+    const diff = this.yScale.domain()[1] - this.yScale.domain()[0];
+    const below = diff / this.yTickCount;
+    let exponent = Math.floor(Math.log10(below));
+    const mantissa = below * Math.pow(10, -exponent);
+    let periodMantissa;
+    if (mantissa < 2) {
+      periodMantissa = 2;
+    } else if (mantissa < 5) {
+      periodMantissa = 5;
+    } else {
+      periodMantissa = 1;
+      exponent++;
+    }
+    const tickPeriod = periodMantissa * Math.pow(10, exponent);
+    return {
+      value: tickPeriod,
+      exponent
+    }
+  }
+
+  // Calculates the y-axis tick marks. The tick period is determined by the
+  // yTickPeriod function. Each tick is divisible by the tick period.
+  // @returns {Object} The value property holds an array of Numbers specifying
+  // the y-ticks. The fractionDigits property specifies the number of digits
+  // right of the decimal point required when formatting the tick values as
+  // decimal numbers.
+  yTicks() {
+    const yExtent = this.yScale.domain();
+    const tickPeriod = this.yTickPeriod();
+    let tick = Math.ceil(yExtent[0] / tickPeriod.value) * tickPeriod.value;
+    let ticks = [];
+    while (tick <= yExtent[1]) {
+      ticks.push(tick);
+      tick += tickPeriod.value;
+    }
+    return {
+      values: ticks,
+      fractionDigits: tickPeriod.exponent < 0 ? -tickPeriod.exponent : 0
+    };
+  }
 
   // Draws the x-axis, y-axis, and the traces
   render() {
-    this.context.clearRect(0, -this.margin.top, this.lineBoxWidth, this.height);
+    this.updateYScale();
+    this.context.clearRect(-this.margin.left, -this.margin.top, this.width,
+      this.height);
     this.drawXAxis();
-    this.context.clearRect(-this.margin.left, -this.margin.top, this.margin.left, this.height);
     this.drawYAxis();
     this.drawTraces();
 
     this.context.lineWidth = 1;
     this.context.setLineDash([]);
     this.context.strokeStyle = 'gray';
-    this.context.strokeRect(-0.5, -0.5, this.lineBoxWidth, this.lineBoxHeight + 1);
+    this.context.strokeRect(-0.5, -0.5, this.traceBoxWidth, this.traceBoxHeight + 1);
   }
 
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
   drawXAxis() {
     const tickMarks = this.ticks(this.interval.start, this.interval.end);
-    const tickSize = 6;
     const tickValues = tickMarks.ticks;
-    const tickFormat = tickMarks.format;
+    const tickFormat = tickMarks.params.formatter;
 
     this.context.beginPath();
     for (const tick of tickValues) {
-      this.context.moveTo(this.xScale(tick), this.lineBoxHeight);
-      this.context.lineTo(this.xScale(tick), this.lineBoxHeight + tickSize);
+      const xPos = this.xScale(tick);
+      this.context.moveTo(xPos, this.traceBoxHeight);
+      this.context.lineTo(xPos, this.traceBoxHeight + TICK_SIZE_IN_PX);
     }
 
     this.context.lineWidth = 1;
@@ -751,31 +828,40 @@ class Plot {
     // Draw vertical grid lines
     this.context.beginPath();
     for (const tick of tickValues) {
-      this.context.moveTo(this.xScale(tick), 0);
-      this.context.lineTo(this.xScale(tick), this.lineBoxHeight);
+      const xPos = this.xScale(tick);
+      this.context.moveTo(xPos, 0);
+      this.context.lineTo(xPos, this.traceBoxHeight);
     }
     this.context.strokeStyle = 'lightgray';
     this.context.stroke();
 
     this.context.textAlign = 'center';
     this.context.textBaseline = 'top';
+    let prevTickX;
+    const MIN_LABEL_PADDING_IN_PX = 5;
     for (const tick of tickValues) {
-      this.context.fillText(tickFormat(tick), this.xScale(tick), this.lineBoxHeight + tickSize);
+      const tickX = this.xScale(tick);
+      // Daylight savings and time zone changes can reduce the space between
+      // ticks. Only draw a label if there is room.
+      if (prevTickX && tickX - prevTickX <
+          tickMarks.params.maxWidthInPx + MIN_LABEL_PADDING_IN_PX) {
+        continue;
+      }
+      this.context.fillText(tickFormat(tick), tickX, this.traceBoxHeight + TICK_SIZE_IN_PX);
+      prevTickX = tickX;
     }
   }
 
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
   drawYAxis() {
-    var tickCount = 10,
-        tickSize = 6,
-        tickPadding = 3,
-        ticks = this.yScale.ticks(tickCount),
-        tickFormat = this.yScale.tickFormat(tickCount);
+    var ticks = this.yTicks(),
+        tickFormat = (number) => number.toLocaleString(undefined, {maximumFractionDigits: ticks.fractionDigits});
 
     this.context.beginPath();
-    for (const tick of ticks) {
-      this.context.moveTo(0, this.yScale(tick));
-      this.context.lineTo(-6, this.yScale(tick));
+    for (const tick of ticks.values) {
+      const yPos = this.yScale(tick);
+      this.context.moveTo(0, yPos);
+      this.context.lineTo(-TICK_SIZE_IN_PX, yPos);
     }
 
     this.context.lineWidth = 1;
@@ -784,25 +870,27 @@ class Plot {
     this.context.stroke();
 
     this.context.beginPath();   
-    for (const tick of ticks) {
-      this.context.moveTo(0, this.yScale(tick));
-      this.context.lineTo(this.lineBoxWidth, this.yScale(tick));
+    for (const tick of ticks.values) {
+      const yPos = this.yScale(tick);
+      this.context.moveTo(0, yPos);
+      this.context.lineTo(this.traceBoxWidth, yPos);
     }
     this.context.strokeStyle = 'lightgray';
     this.context.stroke();
 
     this.context.textAlign = 'right';
     this.context.textBaseline = 'middle';
-    for (const tick of ticks) {
-      this.context.fillText(tickFormat(tick), -tickSize - tickPadding, this.yScale(tick));
+    for (const tick of ticks.values) {
+      this.context.fillText(tickFormat(tick), -TICK_SIZE_IN_PX - TICK_PADDING_IN_PX,
+        this.yScale(tick));
     }
 
     this.context.save();
     this.context.rotate(-Math.PI / 2);
     this.context.textAlign = 'center';
     this.context.textBaseline = 'top';
-    this.context.font = 'bold 10px sans-serif';
-    this.context.fillText(this.yLabel, -this.lineBoxHeight/2, -this.margin.left);
+    this.context.font = 'bold ' + this.context.font;
+    this.context.fillText(this.yLabel, -this.traceBoxHeight/2, -this.margin.left);
     this.context.restore();
   }
 
