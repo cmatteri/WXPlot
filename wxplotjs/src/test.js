@@ -10,13 +10,13 @@ let oldInnerHeight;
 function onResize() {
   if (!isAndroid || window.innerWidth !== oldInnerWidth
       || window.innerHeight > oldInnerHeight) {
-    if (window.innerWidth > 700 
-        || window.innerHeight > window.innerWidth) {
+    const fixedSize = window.innerWidth > 700 && window.innerHeight > 500;
+    if (fixedSize || window.innerHeight > window.innerWidth) {
       plot.className = 'portrait';
     } else {
       plot.className = 'landscape';
     }
-    if (window.innerWidth > 700) {
+    if (fixedSize) {
       plot.style.height = '500px';
     } else {
       plot.style.height = window.innerHeight - 2*bodyMargin + 'px';
