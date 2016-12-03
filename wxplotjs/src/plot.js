@@ -62,7 +62,8 @@ class Plot {
     // Creates the legend, which is a set of line samples and accompanying
     // textual descriptions. The line samples are drawn on small Canvases so
     // the samples look exactly the same as the actual lines.
-    this.legendBox = this.controls.append('div');
+    this.controls.append('div')
+        .attr('id', 'wxplot-legend');
     this.updateControls();
 
     let minIntervalLength;
@@ -496,24 +497,57 @@ class Plot {
    * [ctx.setLineDash](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setLineDash).
    * Pass an empty array for solid lines
    * @param {Number} width - The width of the trace in px
+   * @param {Object} options - Properties of options are optional parameters
+   * @param {String} options.group - The trace group. Traces are sorted by
+   * group in the legend.
    * @returns {Plot} the object addTrace was called on
    */
-  addTrace(dataParams, legendText, color, dash, width) {
+  addTrace(dataParams, legendText, color, dash, width, options) {
+    options = options ? options : {};
     const dataView = new DataView(Object.assign({}, dataParams))
         .setInterval((+this.interval.start), (+this.interval.end));
     dataView.onDataBlockLoaded = this.render.bind(this);
 
-    const legendDiv = this.legendBox.append('div')
-        .classed('wxplot-legend', true);
+    // If a legend group isn't specified, put the label in the empty string
+    // group, which will not have a group title on the legend.
+    const group = 'group' in options ? options.group : '';
+    const legend = document.getElementById('wxplot-legend');
+    const groups = legend.children;
+    let groupTraces;
+    for (let i = 0; i < groups.length; i++) {
+        if(groups[i].children[0].innerText === group) {
+        groupTraces = groups[i].children[1];
+        break;
+      }
+    }
+    // If the group doesn't exist yet, create it.
+    if (!groupTraces) {
+      const groupNode = document.createElement('div');
+      legend.appendChild(groupNode);
+      groupNode.classList.add('wxplot-legend-group')
+      const label = document.createElement('span');
+      groupNode.appendChild(label);
+      label.innerText = group;
+      groupTraces = document.createElement('div');
+      groupNode.appendChild(groupTraces);
+    }
+
+    // Add a label and canvas with a line sample to the legend group for this
+    // trace
+    const legendNode = document.createElement('div');
+    groupTraces.appendChild(legendNode);
+    legendNode.classList.add('wxplot-legend');
     const LEGEND_LINE_LEN = 20;
-    const canvas = legendDiv.append('canvas')
-    const span = legendDiv.append('span')
-        .text(legendText);
-    canvas.attr('width', LEGEND_LINE_LEN * window.devicePixelRatio)
-        .attr('height', this.textHeightPx * window.devicePixelRatio)
-        .style('width', LEGEND_LINE_LEN + 'px')
-        .style('height', this.textHeightPx + 'px')
-    const ctx = canvas.node().getContext('2d');
+    const canvas = document.createElement('canvas');
+    legendNode.appendChild(canvas);
+    const span = document.createElement('span');
+    legendNode.appendChild(span);
+    span.innerText = legendText;
+    canvas.width = LEGEND_LINE_LEN * window.devicePixelRatio;
+    canvas.height = this.textHeightPx * window.devicePixelRatio;
+    canvas.style.width = LEGEND_LINE_LEN + 'px';
+    canvas.style.height = this.textHeightPx + 'px';
+    const ctx = canvas.getContext('2d');
     ctx.scale(devicePixelRatio, devicePixelRatio);
     ctx.beginPath();
     const lineHeight = Math.round(this.textHeightPx / 2) + 0.5;
@@ -526,7 +560,7 @@ class Plot {
 
     this.traces.push({
         legendText,
-        legendDiv,
+        legendNode,
         width,
         color,
         dash,
@@ -553,7 +587,13 @@ class Plot {
   removeTrace(legendText) {
     this.traces = this.traces.filter(trace => {
       if(trace.legendText === legendText) {
-        trace.legendDiv.remove()
+        const groupTraces = trace.legendNode.parentNode;
+        groupTraces.removeChild(trace.legendNode);
+        if (groupTraces.children.length === 0) {
+          const group = groupTraces.parentNode;
+          const legend = group.parentNode;
+          legend.removeChild(group);
+        }
         return false;
       }
       return true;
