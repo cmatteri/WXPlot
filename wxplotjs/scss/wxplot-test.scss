@@ -44,3 +44,14 @@ html {
         height: 100%;
     }
 }
+
+#plot-controls {
+    &, & select {
+        font: 1rem sans-serif;
+        margin: 2px;
+    }
+
+    & label {
+        display: inline-block;
+    }
+}
