@@ -7,14 +7,24 @@ html {
 }
 
 #plot {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     display: flex;
     flex-flow: column;
-    width: 100%;
 }
 
 @media (min-width: 700px) {
-    #plot {
+     #plot {
         width: 700px;
+     }
+}
+
+@media (min-height: 500px) {
+    #plot {
+        height: 500px;
     }
 }
 
@@ -27,7 +37,7 @@ html {
     }
 }
 
-.portrait #plot-canvas {
+#plot-canvas {
     width: 100%;
     min-height: 150px;
     flex: 1;
@@ -47,7 +57,7 @@ html {
     flex: 1;
 }
 
-.landscape {
+@media (max-height: 500px) and (orientation: landscape) {
     #top {
         flex-flow: row;
     }

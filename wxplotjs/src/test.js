@@ -1,33 +1,5 @@
 const WXPlot = require('./plot.js');
 
-// The following is a hack to prevent layout changes on Android when the
-// keyboard is opened.
-const isAndroid = navigator.userAgent.match(/Android/i);
-const bodyMargin = parseFloat(getComputedStyle(document.body)['margin']);
-const plotDiv = document.getElementById('plot');
-let oldInnerWidth;
-let oldInnerHeight;
-function onResize() {
-  if (!isAndroid || window.innerWidth !== oldInnerWidth
-      || window.innerHeight > oldInnerHeight) {
-    const fixedSize = window.innerWidth > 700 && window.innerHeight > 500;
-    if (fixedSize || window.innerHeight > window.innerWidth) {
-      plotDiv.className = 'portrait';
-    } else {
-      plotDiv.className = 'landscape';
-    }
-    if (fixedSize) {
-      plotDiv.style.height = '500px';
-    } else {
-      plotDiv.style.height = window.innerHeight - 2*bodyMargin + 'px';
-    }
-  }
-  oldInnerWidth = window.innerWidth;
-  oldInnerHeight = window.innerHeight;
-}
-window.addEventListener("resize", onResize, false);
-onResize();
-
 const plots = {
   tempDew: {
     traces: [{
