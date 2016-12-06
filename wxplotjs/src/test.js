@@ -153,7 +153,11 @@ const domainExtent = {
   end: +Date.now()
 };
 
+const options = {
+  legendRoot: d3.select("#plot-legend")
+};
+
 const plot = new WXPlot(d3.select("#plot-controls"), d3.select("#plot-canvas"),
-  "America/Los_Angeles", "Temperature (F)", 5, domain, domainExtent);
+  "America/Los_Angeles", "Temperature (F)", 5, domain, domainExtent, options);
 
 updateTraces(plotKey, showMinMax);

@@ -62,7 +62,13 @@ class Plot {
     // Creates the legend, which is a set of line samples and accompanying
     // textual descriptions. The line samples are drawn on small Canvases so
     // the samples look exactly the same as the actual lines.
-    this.controls.append('div')
+    let legendRoot;
+    if ('legendRoot' in this.options) {
+      legendRoot = this.options.legendRoot;
+    } else {
+      legendRoot = controlRoot;
+    }
+    legendRoot.append('div')
         .attr('id', 'wxplot-legend');
     this.updateControls();
 
@@ -536,7 +542,7 @@ class Plot {
     // trace
     const legendNode = document.createElement('div');
     groupTraces.appendChild(legendNode);
-    legendNode.classList.add('wxplot-legend');
+    legendNode.classList.add('wxplot-legend-trace');
     const LEGEND_LINE_LEN = 20;
     const canvas = document.createElement('canvas');
     legendNode.appendChild(canvas);

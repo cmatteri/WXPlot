@@ -23,6 +23,10 @@ div.wxplot-interval-control {
 	color: red;
 }
 
+#wxplot-legend {
+	font: 1rem sans-serif;
+}
+
 .wxplot-legend-group {
 	display: inline-block;
 	border: 1px solid black;
@@ -34,7 +38,7 @@ div.wxplot-interval-control {
 	}
 }
 
-.wxplot-legend {
+.wxplot-legend-trace {
 	display: inline-block;
 	margin: 2px;
 	padding: 2px;

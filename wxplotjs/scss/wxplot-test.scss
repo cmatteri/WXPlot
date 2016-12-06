@@ -10,7 +10,6 @@ html {
     display: flex;
     flex-flow: column;
     width: 100%;
-    height: 200px;
 }
 
 @media (min-width: 700px) {
@@ -19,29 +18,46 @@ html {
     }
 }
 
-#plot-canvas > canvas {
-    width: 100%;
-    height: 100%;
+#plot-canvas {
+    position: relative;
+
+    & > canvas {
+        width: 100%;
+        height: 100%;
+    }
 }
 
 .portrait #plot-canvas {
     width: 100%;
-    min-height: 200px;
+    min-height: 150px;
+    flex: 1;
+    /* 
+     * Position absolute is necessary to make the canvas to fill the available
+     * space on iOS.
+     */
+    & > canvas {
+        position: absolute;
+    }
+}
+
+#top {
+    display: flex;
+    flex-flow: column;
+    /*min-height: 1px;*/
     flex: 1;
 }
 
-#plot.landscape {
-    flex-flow: row;
-}
-
 .landscape {
+    #top {
+        flex-flow: row;
+    }
+
     #plot-controls {
         width: 33%;
     }
 
     #plot-canvas {
         width: 67%;
-        height: 100%;
     }
 }
 
