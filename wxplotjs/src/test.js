@@ -1,5 +1,18 @@
 const WXPlot = require('./plot.js');
 
+function toggleShowControls() {
+  const button = document.getElementById('plot-hide-controls');
+  button.classList.toggle('pressed');
+  button.blur();
+  document.getElementById('plot-hideable-controls').classList.toggle(
+    'hide-controls');
+  document.getElementById('plot-controls').classList.toggle(
+    'overflow-scroll');
+}
+
+document.getElementById('plot-hide-controls').addEventListener('click',
+  toggleShowControls, false);
+
 const plots = {
   tempDew: {
     traces: [{
@@ -90,7 +103,7 @@ function updateTraces(plotKey, showMinMax) {
   }
 }
 
-const plotSelect = d3.select("#plot-controls");
+const plotSelect = d3.select("#plot-hideable-controls");
 const plotMenu = plotSelect.append('select')
 plotMenu.on("change", () => {
   plotKey = plotMenu.node().value;
@@ -126,7 +139,8 @@ const domainExtent = {
 };
 
 const options = {
-  legendRoot: d3.select("#plot-legend")
+  legendRoot: d3.select("#plot-legend"),
+  timeSpanControlRoot: d3.select("#plot-hideable-controls")
 };
 
 const plot = new WXPlot(d3.select("#plot-controls"), d3.select("#plot-canvas"),

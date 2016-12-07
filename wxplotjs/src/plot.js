@@ -9,7 +9,8 @@ const TICK_PADDING_IN_PX = 3;
 class Plot {
   /**
    * @param {d3.Selection} controlRoot - The selection the timespan and
-   * interval controls will be appended to
+   * interval controls will be appended to (unless options.timeSpanControlRoot)
+   * is set.
    * @param {d3.Selection} canvasRoot - The selection the canvas, which
    * contains the axes and traces, will be appended to
    * @param {String} timeZone - Time zone identifier corresponding to the time
@@ -35,6 +36,10 @@ class Plot {
    * (by default, WXPlot uses monotone cubic interpolation to produce smooth
    * lines that pass through all data points and do not introduce minima or
    * maxima between points).
+   * @param {d3.Selection} options.legendRoot - The selection the legend will
+   * be appended to.
+   * @param {d3.Selection} options.timeSpanControlRoot - The selection the
+   * timespan control form will be appended to.
    */
   constructor(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars,
       interval, maxInterval, options) {
@@ -57,6 +62,13 @@ class Plot {
     this.tickReferenceTime = this.maxInterval.start.clone().startOf('year');
 
     this.traces = [];
+
+    let timeSpanControlRoot;
+    if ('timeSpanControlRoot' in this.options) {
+      this.timeSpanControlRoot = this.options.timeSpanControlRoot;
+    } else {
+      this.timeSpanControlRoot = controlRoot;
+    }
 
     this.initializeControls();
     // Creates the legend, which is a set of line samples and accompanying
@@ -255,7 +267,7 @@ class Plot {
       .classed('wxplot-error-message', true);
 
     // Add a row of buttons to control the timespan
-    const timespanForm = this.controls.append('form')
+    const timespanForm = this.timeSpanControlRoot.append('form')
     timespanForm.attr('id', 'wxplot-timespan-control-form')
 
     const timespans = [
@@ -844,6 +856,8 @@ class Plot {
     this.updateYScale();
     this.context.clearRect(-this.margin.left, -this.margin.top, this.width,
       this.height);
+    this.context.fillStyle = 'white';
+    this.context.fillRect(0, 0, this.traceBoxWidth ,this.traceBoxHeight);
     this.drawXAxis();
     this.drawYAxis();
     this.drawTraces();
@@ -894,6 +908,7 @@ class Plot {
           tickMarks.params.maxWidthInPx + MIN_LABEL_PADDING_IN_PX) {
         continue;
       }
+      this.context.fillStyle = 'black';
       this.context.fillText(tickFormat(tick), tickX, this.traceBoxHeight + TICK_SIZE_IN_PX);
       prevTickX = tickX;
     }
@@ -927,6 +942,7 @@ class Plot {
 
     this.context.textAlign = 'right';
     this.context.textBaseline = 'middle';
+    this.context.fillStyle = 'black';
     for (const tick of ticks.values) {
       this.context.fillText(tickFormat(tick), -TICK_SIZE_IN_PX - TICK_PADDING_IN_PX,
         this.yScale(tick));

@@ -2,12 +2,47 @@
     box-sizing: border-box;
 }
 
+/* 
+ * Scrollbars should always be visible so the user knows if an element contains
+ * extra content.
+ */
+
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 7px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, .5);
+  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+}
+
 html {
     font-size: 100%;
 }
 
+body {
+    background-color: #F8F8F8;
+}
+
+button, select {
+    font: 1rem sans-serif;
+    margin: 3px;
+    border:1px solid #cccccc;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+}
+
+button {
+    -webkit-appearance: none;
+}
+
+.overflow-scroll {
+    overflow: scroll;
+}
+
 #plot {
-    position: absolute;
+    position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
@@ -63,6 +98,11 @@ html {
     }
 
     #plot-controls {
+        /* 
+         * We don't want min-content here because it would make the plot
+         * controls section too wide if the user has a large font size. If
+         * anything doesn't fit a scrollbar will appear.
+         */ 
         width: 33%;
     }
 
@@ -71,7 +111,15 @@ html {
     }
 }
 
-#plot-controls {
+#plot-hide-controls {
+    display: none;
+}
+
+#plot-hideable-controls-positioner {
+    position: relative;
+}
+
+#plot-hideable-controls {
     &, & select {
         font: 1rem sans-serif;
         margin: 2px;
@@ -79,5 +127,28 @@ html {
 
     & label {
         display: inline-block;
+        margin: 2px;
     }
 }
+
+@media (max-height: 500px) and (orientation: portrait), (max-height: 275px) {
+    #plot-hide-controls {
+        display: block;
+
+        &.pressed {
+            background-color: #e6e6e6;
+        }
+    }
+
+    #plot-hideable-controls {
+        position: absolute;
+        background-color: white;
+        border: 1px solid black;
+        z-index: 1;
+    }
+
+    .hide-controls {
+        display: none;
+    }
+}
+

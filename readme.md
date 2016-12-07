@@ -73,7 +73,7 @@ A weather data plot.
     * [new Plot(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars, interval, maxInterval, options)](#new_Plot_new)
     * [.setInterval(start, end)](#Plot+setInterval)
     * [.setYLabel(label)](#Plot+setYLabel) ⇒ <code>[Plot](#Plot)</code>
-    * [.addTrace(dataParams, legendText, color, dash, width)](#Plot+addTrace) ⇒ <code>[Plot](#Plot)</code>
+    * [.addTrace(dataParams, legendText, color, dash, width, options)](#Plot+addTrace) ⇒ <code>[Plot](#Plot)</code>
     * [.getTraces()](#Plot+getTraces) ⇒ <code>Array</code>
     * [.removeTrace(legendText)](#Plot+removeTrace) ⇒ <code>[Plot](#Plot)</code>
 
@@ -83,7 +83,7 @@ A weather data plot.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| controlRoot | <code>d3.Selection</code> | The selection the timespan and interval controls will be appended to |
+| controlRoot | <code>d3.Selection</code> | The selection the timespan and interval controls will be appended to (unless options.timeSpanControlRoot) is set. |
 | canvasRoot | <code>d3.Selection</code> | The selection the canvas, which contains the axes and traces, will be appended to |
 | timeZone | <code>String</code> | Time zone identifier corresponding to the time zone of the weather station, e.g. 'America/Los_Angeles' |
 | yLabel | <code>String</code> | Label for the vertical axis |
@@ -95,6 +95,8 @@ A weather data plot.
 | options | <code>Object</code> | Properties of options are optional parameters |
 | options.minIntervalLength | <code>Number</code> | The minimum interval length in ms. Default is one hour. |
 | options.smooth | <code>Boolean</code> | Set to false to not draw smooth traces (by default, WXPlot uses monotone cubic interpolation to produce smooth lines that pass through all data points and do not introduce minima or maxima between points). |
+| options.legendRoot | <code>d3.Selection</code> | The selection the legend will be appended to. |
+| options.timeSpanControlRoot | <code>d3.Selection</code> | The selection the timespan control form will be appended to. |
 
 <a name="Plot+setInterval"></a>
 
@@ -122,7 +124,7 @@ Sets the y-axis label
 
 <a name="Plot+addTrace"></a>
 
-### plot.addTrace(dataParams, legendText, color, dash, width) ⇒ <code>[Plot](#Plot)</code>
+### plot.addTrace(dataParams, legendText, color, dash, width, options) ⇒ <code>[Plot](#Plot)</code>
 Adds a new trace
 
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
@@ -140,6 +142,8 @@ Adds a new trace
 | color | <code>String</code> | The color of the trace. A CSS color value. |
 | dash | <code>Array</code> | Specifies the line dash to be passed to [ctx.setLineDash](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setLineDash). Pass an empty array for solid lines |
 | width | <code>Number</code> | The width of the trace in px |
+| options | <code>Object</code> | Properties of options are optional parameters |
+| options.group | <code>String</code> | The trace group. Traces are sorted by group in the legend. |
 
 <a name="Plot+getTraces"></a>
 
