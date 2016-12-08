@@ -45,7 +45,8 @@ class Plot {
       interval, maxInterval, options) {
     this.controls = controlRoot.append('div')
         .attr('id', 'wxplot-controls');
-    this.canvasRoot = canvasRoot;
+    this.canvasRoot = canvasRoot.append('div')
+        .attr('id', 'wxplot-canvas-box');
     this.timeZone = timeZone;
     this.yLabel = yLabel;
     this.yTickLabelChars = yTickLabelChars;
@@ -115,7 +116,7 @@ class Plot {
     // When the div that holds the canvas is resized, replace the canvas with a
     // new one of the correct size.
     const ResizeSensor = require('css-element-queries/src/ResizeSensor');
-    new ResizeSensor(canvasRoot.node(), () => {
+    new ResizeSensor(this.canvasRoot.node(), () => {
       this.canvas.remove();
       this.initializeCanvas();
       this.render();}
@@ -182,8 +183,7 @@ class Plot {
     this.canvas = this.canvasRoot.append('canvas')
         .attr('id', 'wxplot-canvas');
     const plotStyle = getComputedStyle(this.canvas.node());
-    this.width = parseFloat(plotStyle.width)
-      - parseFloat(plotStyle.paddingRight);
+    this.width = parseFloat(plotStyle.width);
     this.height = parseFloat(plotStyle.height);
     const LINE_HEIGHT = 1.2;
     this.textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
@@ -204,7 +204,7 @@ class Plot {
 
     this.margin = {
       top: Math.ceil(this.textHeightPx / 2),
-      right: 0,
+      right: 15,
       bottom: Math.ceil(this.textHeightPx + TICK_SIZE_IN_PX),
       // The last 2 px are extra padding
       left: Math.ceil(this.textHeightPx + TICK_SIZE_IN_PX + TICK_PADDING_IN_PX
