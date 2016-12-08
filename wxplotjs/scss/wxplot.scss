@@ -17,7 +17,6 @@
 
 div.wxplot-interval-control {
 	display: inline-block;
-	margin-right: 10px;
 }
 
 .wxplot-error-message {
@@ -119,4 +118,28 @@ div.wxplot-interval-control {
 	width: 700px;
 	height: 400px;
 	position: relative;
+}
+
+#wxplot-brush-indicator, #wxplot-brush {
+	position: absolute;
+	left: 0;
+}
+
+#wxplot-brush-indicator {
+	top: 0;
+	pointer-events: none;
+
+	rect {
+	    fill: rgb(119, 119, 119);
+	    fill-opacity: 0.3;
+    }
+}
+
+#wxplot-brush {
+	bottom: 0;
+	background-color: rgba(72, 63, 191, 0.1);
+
+	.selection {
+	    stroke: none;
+	}
 }

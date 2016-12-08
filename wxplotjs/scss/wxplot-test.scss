@@ -65,23 +65,22 @@ button {
 
 #plot-canvas {
     position: relative;
+    margin: 5px;
+    width: 100%;
+    min-height: 150px;
+    flex: 1;
 
     /* Make the canvas container match the dimensions of plot-canvas */
     & > * {
         width: 100%;
         height: 100%;
     }
-}
 
-#plot-canvas {
-    width: 100%;
-    min-height: 150px;
-    flex: 1;
     /* 
      * Position absolute is necessary to make the canvas to fill the available
      * space on iOS.
      */
-    & > canvas {
+    & canvas {
         position: absolute;
     }
 }

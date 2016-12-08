@@ -112,13 +112,18 @@ class Plot {
     }
 
     this.initializeCanvas();
+    this.initializeBrush();
 
-    // When the div that holds the canvas is resized, replace the canvas with a
-    // new one of the correct size.
+    // It's much simple to remove the canvas and brush and recreate them then
+    // to write more code to update them. Resizes occur infrequently so
+    // whatever performance benefits there are to modifying don't matter.
     const ResizeSensor = require('css-element-queries/src/ResizeSensor');
     new ResizeSensor(this.canvasRoot.node(), () => {
       this.canvas.remove();
+      this.brushBox.remove();
+      d3.select('#wxplot-indicator-brush').remove();
       this.initializeCanvas();
+      this.initializeBrush();
       this.render();}
     );
 
@@ -232,6 +237,41 @@ class Plot {
     this.canvas.call(this.zoom);
 
     this.yTickCount = Math.floor(this.height / (this.textHeightPx + 36));
+  }
+
+  initializeBrush() {
+    this.brush = d3.brushX()
+      .extent([[0, 0], [this.traceBoxWidth, this.margin.bottom]])
+      .on("end", this.brushed.bind(this))
+      .on("brush", () => {
+        const sel = d3.event.selection;
+        // After the user has made a brush selection, the selection is cleared,
+        // so a null selection will be passed in. When that occurs, hide the
+        // brush indicator by setting its width to 0.
+        if (sel) {
+          this.brushIndicatorRect.attr('x', sel[0])
+            .attr('width', sel[1] - sel[0])
+        } else {
+          this.brushIndicatorRect.attr('width', 0)
+        }
+      });
+
+    this.brushBox = this.canvasRoot.append('svg')
+        .attr('width', this.traceBoxWidth)
+        .attr('height', this.margin.bottom)
+        .attr('id', 'wxplot-brush')
+        .style('margin-left', this.margin.left + 'px')
+        .call(this.brush);
+
+    this.brushIndicatorRect = this.canvasRoot.append('svg')
+        .attr('width', this.traceBoxWidth)
+        .attr('height', this.traceBoxHeight)
+        .attr('id', 'wxplot-brush-indicator')
+        .style('margin-top', this.margin.top + 'px')
+        .style('margin-left', this.margin.left + 'px')
+        .append('rect')
+        .attr('y', 0)
+        .attr('height', this.traceBoxHeight)
   }
 
   // Creates the input elements used to control/display the plot's interval
@@ -479,7 +519,7 @@ class Plot {
     const baseRange = this.origXScale.range();
     const scaleFactor = (baseRange[1] - baseRange[0]) / (endX - startX);
     const xShift = scaleFactor*baseRange[0] - startX;
-    this.canvas.call(this.zoom.transform,
+    this.canvas.transition().duration(500).call(this.zoom.transform,
       d3.zoomIdentity.scale(scaleFactor).translate(xShift, 0));
   }
 
@@ -661,6 +701,21 @@ class Plot {
     }
 
     this.render();
+  }
+
+  // Event handler for the D3 brush event. Sets the plot's interval based on
+  // the region selected with the brush.
+  brushed() {
+    var selection = d3.event.selection;
+    // brushed is called with a null selection after the brush selection is
+    // cleared.
+    if (!selection) {
+      return;
+    }
+    // Clear the brush selection
+    this.brushBox.call(this.brush.move, null);
+    const interval = selection.map(this.xScale.invert, this.xScale);
+    this.setInterval(interval[0], interval[1]);
   }
 
   /*
