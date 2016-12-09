@@ -548,6 +548,12 @@ class Plot {
     if (end > this.maxInterval.end) {
       end = this.maxInterval.end;
     }
+    const diff = end - start;
+    if (diff < this.minIntervalLength) {
+      const extra = this.minIntervalLength - diff;
+      start -= extra/2;
+      end += extra/2;
+    }
     // The current interval is determined by the D3 zoom behavior that was
     // applied to the canvas. this.interval merely caches the start and end of
     // the interval. To change the interval, we must change the zoom. Zoom is
@@ -558,7 +564,7 @@ class Plot {
     const baseRange = this.origXScale.range();
     const scaleFactor = (baseRange[1] - baseRange[0]) / (endX - startX);
     const xShift = scaleFactor*baseRange[0] - startX;
-    this.canvas.transition().duration(500).call(this.zoom.transform,
+    this.zoomBox.transition().duration(500).call(this.zoom.transform,
       d3.zoomIdentity.scale(scaleFactor).translate(xShift, 0));
   }
 
