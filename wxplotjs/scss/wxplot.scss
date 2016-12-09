@@ -49,10 +49,6 @@ div.wxplot-interval-control {
 	float: right;
 }
 
-#wxplot-legend {
-	font: 1rem sans-serif;
-}
-
 .wxplot-legend-group {
 	display: inline-block;
 	background-color: white;
@@ -81,7 +77,6 @@ div.wxplot-interval-control {
 	margin: 2px;
 
 	input {
-		font: 1rem sans-serif;
 		margin: 3px;
 		border:1px solid #CCCCCC;
 		border-radius: 3px;
@@ -127,11 +122,8 @@ div.wxplot-interval-control {
 	}
 }
 
-#wxplot-controls, #wxplot-canvas {
-	font-family: sans-serif;
-}
-
-#wxplot-controls input {
+#wxplot-legend, #wxplot-controls, #wxplot-canvas-box, #wxplot-controls input, 
+#wxplot-timespan-control-form input {
 	font: 1rem sans-serif;
 }
 
