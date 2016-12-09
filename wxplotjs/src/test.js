@@ -141,7 +141,8 @@ const options = {
   timeSpanControlRoot: d3.select("#plot-hideable-controls")
 };
 
-const plot = new WXPlot(d3.select("#plot-controls"), d3.select("#plot-canvas"),
-  "America/Los_Angeles", "Temperature (F)", 5, domain, domainExtent, options);
+const plot = new WXPlot(d3.select("#plot-controls"),
+  d3.select("#plot-canvas-inner"), "America/Los_Angeles", "Temperature (F)", 5,
+  domain, domainExtent, options);
 
 updateTraces(plotKey, showMinMax);
