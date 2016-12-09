@@ -120,9 +120,14 @@ div.wxplot-interval-control {
 	position: relative;
 }
 
-#wxplot-brush-indicator, #wxplot-brush {
+#wxplot-zoom, #wxplot-brush-indicator, #wxplot-brush {
 	position: absolute;
 	left: 0;
+}
+
+#wxplot-zoom {
+	top: 0;
+	z-index: 1;
 }
 
 #wxplot-brush-indicator {

@@ -112,6 +112,7 @@ class Plot {
     }
 
     this.initializeCanvas();
+    this.initializeZoom();
     this.initializeBrush();
 
     // It's much simple to remove the canvas and brush and recreate them then
@@ -120,9 +121,11 @@ class Plot {
     const ResizeSensor = require('css-element-queries/src/ResizeSensor');
     new ResizeSensor(this.canvasRoot.node(), () => {
       this.canvas.remove();
+      this.zoomBox.remove();
       this.brushBox.remove();
       d3.select('#wxplot-indicator-brush').remove();
       this.initializeCanvas();
+      this.initializeZoom();
       this.initializeBrush();
       this.render();}
     );
@@ -224,6 +227,10 @@ class Plot {
     this.yScale.range([this.traceBoxHeight, 0]);
     this.lineGenerator.context(this.context);
 
+    this.yTickCount = Math.floor(this.height / (this.textHeightPx + 36));
+  }
+
+  initializeZoom() {
     const minScale = (this.interval.end - this.interval.start) 
       / (this.maxInterval.end - this.maxInterval.start);
     const maxScale = (this.interval.end - this.interval.start)
@@ -234,9 +241,13 @@ class Plot {
         .translateExtent([[this.origXScale(this.maxInterval.start), 0],
           [this.origXScale(this.maxInterval.end), this.height]])
         .on('zoom', this.zoomed.bind(this));
-    this.canvas.call(this.zoom);
-
-    this.yTickCount = Math.floor(this.height / (this.textHeightPx + 36));
+    this.zoomBox = this.canvasRoot.append('div')
+      .attr('id', 'wxplot-zoom')
+      .style('width', this.traceBoxWidth + 'px')
+      .style('height', this.traceBoxHeight + 'px')
+      .style('margin-top', this.margin.top + 'px')
+      .style('margin-left', this.margin.left + 'px')
+    this.zoomBox.call(this.zoom);
   }
 
   initializeBrush() {
