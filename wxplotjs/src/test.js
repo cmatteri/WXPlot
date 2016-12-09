@@ -1,17 +1,15 @@
 const WXPlot = require('./plot.js');
 
-function toggleShowControls() {
-  const button = document.getElementById('plot-hide-controls');
-  button.classList.toggle('pressed');
-  button.blur();
-  document.getElementById('plot-hideable-controls').classList.toggle(
-    'hide-controls');
-  document.getElementById('plot-controls').classList.toggle(
-    'overflow-scroll');
-}
-
 document.getElementById('plot-hide-controls').addEventListener('click',
-  toggleShowControls, false);
+  () => {
+    const button = document.getElementById('plot-hide-controls');
+    button.classList.toggle('pressed');
+    button.blur();
+    document.getElementById('plot-hideable-controls').classList.toggle(
+      'hide-controls');
+    document.getElementById('plot-controls').classList.toggle(
+      'overflow-scroll');
+  }, false);
 
 const plots = {
   tempDew: {
