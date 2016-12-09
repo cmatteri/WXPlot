@@ -317,6 +317,34 @@ class Plot {
     const errorMessage = this.controls.append('label')
       .classed('wxplot-error-message', true);
 
+    this.controls.append('button')
+      .attr('id', 'wxplot-help-button')
+      .text('?')
+      .on('click', () => {
+        document.getElementById('wxplot-help-box').classList.toggle('wxplot-hide');
+        const button = document.getElementById('wxplot-help-button');
+        button.classList.toggle('wxplot-pressed');
+        button.blur();
+      })
+
+    // The help message box is added to the canvas div rather than the controls
+    // div because the controls div can get small on mobile, and the canvas div
+    // is (probably) more centrally positioned.
+    const helpDiv = this.canvasRoot.append('div')
+      .attr('id', 'wxplot-help-box')
+      .classed('wxplot-hide', true)
+    helpDiv.append('button')
+      .attr('id', 'wxplot-help-close-button')
+      .text('x')
+      .on('click', () => {
+        document.getElementById('wxplot-help-box').classList.add('wxplot-hide');
+        document.getElementById('wxplot-help-button').classList.remove('wxplot-pressed');
+      })
+    helpDiv.append('span')
+      .html('Use the mouse or touch to pan/zoom.<br>\
+            Drag in the violet box below the x-axis to zoom to a certain region.');
+  
+
     // Add a row of buttons to control the timespan
     const timespanForm = this.timeSpanControlRoot.append('form')
     timespanForm.attr('id', 'wxplot-timespan-control-form')

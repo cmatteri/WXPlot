@@ -23,6 +23,32 @@ div.wxplot-interval-control {
 	color: red;
 }
 
+.wxplot-hide {
+	display: none;
+}
+
+.wxplot-pressed {
+    background-color: #e6e6e6;
+}
+
+#wxplot-help-button {
+	float: right;
+}
+
+#wxplot-help-box {
+	position: absolute;
+	margin: 5px;
+	border: 1px solid black;
+	background-color: white;
+	overflow-y: scroll;
+	max-height: 100%;
+	z-index: 100;
+}
+
+#wxplot-help-close-button {
+	float: right;
+}
+
 #wxplot-legend {
 	font: 1rem sans-serif;
 }
