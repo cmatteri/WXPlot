@@ -15,21 +15,15 @@ module.exports = class DataBlock {
    * into
    */
   constructor(start, end, dataParams, segmentCount) {
-    this.interval = {start, end};
-    this.dataParams = dataParams;
-    this.segmentCache = [];
-    this.onLoaded = null;
-    this.segmentLength = (end - start) / segmentCount;
-    this.pointsPerSegment = dataParams.minDataPoints * 2;
-    this.aggregateInterval = this.segmentLength / this.pointsPerSegment;
-    this.segments = null;
-    this.data = null;
-  }
-
-  // Compares two DataBlocks
-  isSameAs(other) {
-    return this.interval.start === other.interval.start
-      && this.interval.end === other.interval.end;
+    this._interval = {start, end};
+    this._dataParams = dataParams;
+    this._segmentCache = [];
+    this._onLoaded = null;
+    this._segmentLength = (end - start) / segmentCount;
+    const pointsPerSegment = dataParams.minDataPoints * 2;
+    this._aggregateInterval = this._segmentLength / pointsPerSegment;
+    this._segments = null;
+    this._data = null;
   }
 
   /*
@@ -40,51 +34,55 @@ module.exports = class DataBlock {
    * @returns {DataBlock} the object load was called on
    */
   load(segmentCache, onLoaded) {
-    if (segmentCache) this.segmentCache = segmentCache;
-    this.onLoaded = onLoaded;
-    this.getSegments();
+    if (segmentCache) this._segmentCache = segmentCache;
+    this._onLoaded = onLoaded;
+    this._getSegments();
     return this;
+  }
+
+  interval() {
+    return this._interval;
+  }
+
+  data() {
+    return this._data;
+  }
+
+  aggregateInterval() {
+    return this._aggregateInterval
   }
 
   // @returns {Boolean} True iff all data has loaded
   get loaded() {
-    return this.data !== null;
+    return this._data !== null;
   }
 
   // Creates the segments. They will automatically load themselves from the server.
-  getSegments() {
+  _getSegments() {
     var segmentPromises = [];
-    for (var segmentStart = this.interval.start; segmentStart < this.interval.end; segmentStart += this.segmentLength) {
+    for (var segmentStart = this._interval.start; segmentStart < this._interval.end; segmentStart += this._segmentLength) {
       segmentPromises.push(new Promise((resolve, reject) => {
-        let segment = this.getSegment(segmentStart, segmentStart + this.segmentLength, this.aggregateInterval);
-        if (segment.loaded) {
+        let segment = this._getSegment(segmentStart, segmentStart + this._segmentLength, this._aggregateInterval);
+        if (segment.loaded()) {
           resolve(segment);
         } else {
-          if (segment.onLoaded) {
-            var oldCallback = segment.onLoaded;
-            segment.onLoaded = () => {
-              old();
-              resolve(segment);
-            }
-          } else {
-            segment.onLoaded = () => resolve(segment);
-          }
+          segment.onLoaded(() => resolve(segment));
         }
       }));
     }
     Promise.all(segmentPromises).then(segments => {
-      this.segments = segments;
+      this._segments = segments;
       let data = [];
       segments.forEach(segment => {
-        this.segmentCache.push(segment);
-        data.push.apply(data, segment.data);
+        this._segmentCache.push(segment);
+        data.push.apply(data, segment.data());
       });
-      const times = d3.range(this.interval.start, this.interval.end, this.aggregateInterval);
-      this.data = [];
+      const times = d3.range(this._interval.start, this._interval.end, this._aggregateInterval);
+      this._data = [];
       for (let i = 0; i < times.length; i++) {
-        this.data.push([times[i], data[i]]);
+        this._data.push([times[i], data[i]]);
       }
-      this.onLoaded();
+      this._onLoaded();
     });
   }
 
@@ -94,12 +92,13 @@ module.exports = class DataBlock {
    * The parameters are the same as those of the DataSegment constructor with
    * the same name.
    */
-  getSegment(start, end, aggregateInterval) {
-    for (const segment of this.segmentCache) {
-      if (segment.start === start && segment.end === end && segment.aggregateInterval === aggregateInterval) {
+  _getSegment(start, end, aggregateInterval) {
+    for (const segment of this._segmentCache) {
+      if (start === segment.interval().start
+          && end === segment.interval().end) {
         return segment;
       }
     }
-    return new DataSegment(start, end, aggregateInterval, this.dataParams);
+    return new DataSegment(start, end, aggregateInterval, this._dataParams);
   }
 }

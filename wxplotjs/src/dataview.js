@@ -19,15 +19,19 @@ module.exports = class DataView {
    * plot class.
    */
   constructor(dataParams) {
-    this.dataParams = dataParams;
-    this.segmentCache = [];
-    this.currentDataBlock = null;
-    this.nextDataBlock = null;
-    this.extent = null;
-    this.interval = null;
-    this.onDataBlockLoaded = null;
-    this.dataCache = null;
-    this.DATABLOCK_LOAD_DELAY_MS = 100;
+    this._dataParams = dataParams;
+    this._segmentCache = [];
+    this._currentDataBlock = null;
+    this._nextDataBlock = null;
+    this._extent = null;
+    this._interval = null;
+    this._onDataBlockLoaded = null;
+    this._dataCache = null;
+    this._DATABLOCK_LOAD_DELAY_MS = 100;
+  }
+
+  onLoaded(callback) {
+    this._onDataBlockLoaded = callback;
   }
 
   /*
@@ -35,7 +39,7 @@ module.exports = class DataView {
    * DataBlock)
    */
   isLoading() {
-    return this.nextDataBlock != null;
+    return this._nextDataBlock != null;
   }
 
   /*
@@ -43,7 +47,7 @@ module.exports = class DataView {
    * one
    */
   isLoaded() {
-    return this.currentDataBlock != null;
+    return this._currentDataBlock != null;
   }
 
   /*
@@ -54,8 +58,8 @@ module.exports = class DataView {
    * @returns {DataView} The object setInterval was called on
    */
   setInterval(start, end, onLoaded) {
-    this.interval = {start, end};
-    this.updateDataBlock();
+    this._interval = {start, end};
+    this._updateDataBlock();
     return this;
   }
 
@@ -64,30 +68,30 @@ module.exports = class DataView {
    * DataView's current DataBlock's data. It is cached to avoid having to
    * compute that slice every time it is accessed.
    */
-  cacheData() {
-    const block = this.currentDataBlock;
-    if (this.dataCache != null && this.dataCache.start === this.interval.start
-      && this.dataCache.end === this.interval.end && this.dataCache.block === block) {
+  _cacheData() {
+    const block = this._currentDataBlock;
+    if (this._dataCache != null && this._dataCache.start === this._interval.start
+      && this._dataCache.end === this._interval.end && this._dataCache.block === block) {
       return;
     }
 
-    let firstIndex = Math.ceil((this.interval.start - block.interval.start)
-      / block.aggregateInterval);
+    let firstIndex = Math.ceil((this._interval.start - block.interval().start)
+      / block.aggregateInterval());
     if (firstIndex < 0) firstIndex = 0;
-    const lastIndex = Math.floor((this.interval.end - block.interval.start)
-      / block.aggregateInterval);
+    const lastIndex = Math.floor((this._interval.end - block.interval().start)
+      / block.aggregateInterval());
 
-    const data = block.data.slice(firstIndex, lastIndex + 1);
-    const firstBefore = (firstIndex === 0 || data.length === 0) ? null : block.data[firstIndex - 1];
-    const firstAfter = (lastIndex === block.data.length - 1 || data.length === 0)
-      ? null : block.data[lastIndex + 1];
+    const data = block.data().slice(firstIndex, lastIndex + 1);
+    const firstBefore = (firstIndex === 0 || data.length === 0) ? null : block.data()[firstIndex - 1];
+    const firstAfter = (lastIndex === block.data().length - 1 || data.length === 0)
+      ? null : block.data()[lastIndex + 1];
 
     let displayData = [];
 
     let first = data[0];
     if (firstBefore && first[1] && firstBefore[1]) {
       const interval = first[0] - firstBefore[0];
-      const start = this.interval.start;
+      const start = this._interval.start;
       const left = first[1] - ((first[1] - firstBefore[1]) 
         / interval * (first[0] - start));
       displayData.push([start, left]);
@@ -98,15 +102,15 @@ module.exports = class DataView {
     let last = data[data.length - 1];
     if (firstAfter && last[1] && firstAfter[1]) {
       const interval = firstAfter[0] - last[0];
-      const end = this.interval.end;
+      const end = this._interval.end;
       const right = last[1] + ((firstAfter[1] - last[1])
         / interval * (end - last[0]));
       displayData.push([end, right]);
     }
 
-    this.dataCache = {
-      start: this.interval.start,
-      end: this.interval.end,
+    this._dataCache = {
+      start: this._interval.start,
+      end: this._interval.end,
       block,
       data,
       displayData
@@ -114,13 +118,13 @@ module.exports = class DataView {
   }
 
   getData() {
-    this.cacheData();
-    return this.dataCache.data;
+    this._cacheData();
+    return this._dataCache.data;
   };
 
   getDisplayData() {
-    this.cacheData();
-    return this.dataCache.displayData;
+    this._cacheData();
+    return this._dataCache.displayData;
   }
 
   /*
@@ -128,24 +132,30 @@ module.exports = class DataView {
    * DataBlock is already the current DataBlock, nothing is done. Otherwise,
    * the new DataBlock is created and loaded.
    */
-  updateDataBlock() {
+  _updateDataBlock() {
+    function dataBlocksHaveSameInterval(first, second) {
+      return first.interval().start === second.interval().start
+        && first.interval().end === second.interval().end;
+    }
     const SEGMENTS_PER_BLOCK = 4;
-    const segmentLength = this.segmentLength();
+    const _segmentLength = this._segmentLength();
 
-    const startOfThirdSegment = Math.floor(this.interval.start / segmentLength) * segmentLength;
-    const startOfFirstSegment = startOfThirdSegment - 2*segmentLength;
-    const endOflastSegment = startOfFirstSegment + 4*segmentLength;
+    const startOfThirdSegment = Math.floor(this._interval.start / _segmentLength) * _segmentLength;
+    const startOfFirstSegment = startOfThirdSegment - 2*_segmentLength;
+    const endOflastSegment = startOfFirstSegment + 4*_segmentLength;
 
     const target = new DataBlock(startOfFirstSegment, endOflastSegment,
-      this.dataParams, SEGMENTS_PER_BLOCK); 
-    if ((this.currentDataBlock && target.isSameAs(this.currentDataBlock))
-        || (this.nextDataBlock && target.isSameAs(this.nextDataBlock))) {
-        return;
+      this._dataParams, SEGMENTS_PER_BLOCK); 
+    if ((this._currentDataBlock
+        && dataBlocksHaveSameInterval(target, this._currentDataBlock))
+      || (this._nextDataBlock
+        && dataBlocksHaveSameInterval(target, this._nextDataBlock))) { 
+      return;
     }
 
     // Prevent the segment cache from getting too large.
-    if (this.segmentCache.length > 100) {
-      this.segmentCache = this.segmentCache.slice(50);
+    if (this._segmentCache.length > 100) {
+      this._segmentCache = this._segmentCache.slice(50);
     }
 
     // If a DataBlock is scheduled to be loaded, cancel the load. The other DataBlock is no longer needed (see comment below).
@@ -161,38 +171,38 @@ module.exports = class DataView {
     this.timeoutID = window.setTimeout((segmentCache, onLoaded) => {
       this.timeoutID = null;
       target.load.call(target, segmentCache, onLoaded);
-    }, this.DATABLOCK_LOAD_DELAY_MS, this.segmentCache, () => {
+    }, this._DATABLOCK_LOAD_DELAY_MS, this._segmentCache, () => {
       // If the DataBlock we wish to load changes before this one loads,
       // don't do anything when this one loads.
-      if (this.nextDataBlock !== target) return;
-      this.currentDataBlock = target;
-      this.nextDataBlock = null;
-      if (this.onDataBlockLoaded) {
-        // this.onDataBlockLoaded must be set to null because the DataBlock it
-        // corresponds to has loaded. We need to set this.onDataBlockLoaded to
+      if (this._nextDataBlock !== target) return;
+      this._currentDataBlock = target;
+      this._nextDataBlock = null;
+      if (this._onDataBlockLoaded) {
+        // this._onDataBlockLoaded must be set to null because the DataBlock it
+        // corresponds to has loaded. We need to set this._onDataBlockLoaded to
         // null before calling the callback, since the callback may change this
-        // DataView's interval and set this.onDataBlockLoaded.
-        const callback = this.onDataBlockLoaded;
-        this.onDataBlockLoaded = null;
+        // DataView's interval and set this._onDataBlockLoaded.
+        const callback = this._onDataBlockLoaded;
+        this._onDataBlockLoaded = null;
         callback();
       }
     });
-    this.nextDataBlock = target;
+    this._nextDataBlock = target;
     // The function referenced by onDataBlockLoaded (if any) is a callback for
     // the loading of a different DataBlock than nextDataBlock, so it is
     // cleared.
-    this.onDataBlockLoaded = null;
+    this._onDataBlockLoaded = null;
   }
 
   /*
    * Returns the segment length in ms. It is calculated from the length of the
    * current interval (the level of zoom).
    */
-  segmentLength() {
+  _segmentLength() {
     const MS_PER_MINUTE = 60 * 1000;
-    const pointsPerSegment = this.dataParams.minDataPoints * 2;
-    const minSegment = this.dataParams.archiveIntervalMinutes * MS_PER_MINUTE * pointsPerSegment;
-    const delta = this.interval.end - this.interval.start;
+    const pointsPerSegment = this._dataParams.minDataPoints * 2;
+    const minSegment = this._dataParams.archiveIntervalMinutes * MS_PER_MINUTE * pointsPerSegment;
+    const delta = this._interval.end - this._interval.start;
     let exponent = Math.log(delta / minSegment) / Math.log(2);
     if (exponent < 0) {
       exponent = 0;

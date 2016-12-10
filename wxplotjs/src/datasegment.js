@@ -12,43 +12,54 @@ module.exports = class DataSegment {
    * in the plot class
    */
   constructor(start, end, aggregateInterval, dataParams) {
-    this.start = start;
-    this.end = end;
+    this._interval = {start, end};;
     if ('offset' in dataParams) {
-      this.start -= dataParams.offset;
-      this.end -= dataParams.offset;
+      this._interval.start -= dataParams.offset;
+      this._interval.end -= dataParams.offset;
     }
-    this.aggregateInterval = aggregateInterval;
-    this.dataParams =  dataParams;
-    this.pointsPerSegment = Math.floor((end - start) / aggregateInterval);
-    this.data = null;
-    this.onLoaded = null;
-    this.getData();
+    this._aggregateInterval = aggregateInterval;
+    this._dataParams =  dataParams;
+    this._pointsPerSegment = Math.floor((end - start) / aggregateInterval);
+    this._data = null;
+    this._onLoaded = null;
+    this._getData();
+  }
+
+  interval() {
+    return this._interval;
+  }
+
+  data() {
+    return this._data;
   }
 
   // Returns true iff the data is loaded
-  get loaded() {
-    return this.data !== null;
+  loaded() {
+    return this._data !== null;
+  }
+
+  onLoaded(callback) {
+    this._onLoaded = callback;
   }
 
   // Gets the data from the server.
-  getData() {
-    var startDate = new Date(this.start);
-    var endDate = new Date(this.end);
+  _getData() {
+    var startDate = new Date(this._interval.start);
+    var endDate = new Date(this._interval.end);
 
-    d3.request(this.dataParams.url + '?start=' + encodeURIComponent(startDate.toISOString())
+    d3.request(this._dataParams.url + '?start=' + encodeURIComponent(startDate.toISOString())
       + '&end=' + encodeURIComponent(endDate.toISOString())
-      + '&aggregateInterval=' + this.aggregateInterval/1000
-      + '&aggregateType=' + this.dataParams.aggregateType)
+      + '&aggregateInterval=' + this._aggregateInterval/1000
+      + '&aggregateType=' + this._dataParams.aggregateType)
       .get((error, xhr) => {
         if (error) {
           return;
         }
-        this.data = JSON.parse(xhr.responseText).values;
-        if (this.data.length != this.pointsPerSegment) {
-          this.data[this.pointsPerSegment - 1] = null;
+        this._data = JSON.parse(xhr.responseText).values;
+        if (this._data.length != this._pointsPerSegment) {
+          this._data[this._pointsPerSegment - 1] = null;
         }
-        if (this.onLoaded) this.onLoaded();
+        if (this._onLoaded) this._onLoaded();
     });
   }
 }
