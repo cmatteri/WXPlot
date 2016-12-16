@@ -79,7 +79,7 @@ var dataParams = {
 function updateTraces(plotKey, showMinMax) {
   let colors = ['steelblue', 'crimson'];
   let color_index = 0;
-  plot.getTraces().map(trace => plot.removeTrace(trace));
+  plot.removeTraces();
   plot.setYLabel(plots[plotKey].unit);
   let aggregateTypes = showMinMax ? ['max', 'avg', 'min'] : ['avg'];
   for (const trace of plots[plotKey].traces) {
@@ -94,11 +94,13 @@ function updateTraces(plotKey, showMinMax) {
       const traceOptions = {
         group: trace.displayName
       };
-      plot.addTrace(dataParams, aggType, colors[color_index], [],
-        aggType === 'avg' ? 1.5 : 0.5, traceOptions);
+      plot.addTrace(aggType, trace.displayName, dataParams,
+                    colors[color_index], [], aggType === 'avg' ? 1.5 : 0.5,
+                    traceOptions);
     }
     color_index++;
   }
+  plot.loadTracesAndRedraw();
 }
 
 const plotSelect = d3.select("#plot-hideable-controls");

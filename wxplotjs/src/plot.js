@@ -1,4 +1,4 @@
-let DataView = require('./dataview.js');
+let Trace = require('./trace.js');
 
 const TICK_SIZE_IN_PX = 6;
 const TICK_PADDING_IN_PX = 3;
@@ -42,7 +42,7 @@ class Plot {
    * timespan control form will be appended to.
    */
   constructor(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars,
-      interval, maxInterval, options) {
+      interval, maxInterval, options = {}) {
     this._controls = controlRoot.append('div')
         .attr('id', 'wxplot-controls');
     this._canvasRoot = canvasRoot.append('div')
@@ -58,7 +58,7 @@ class Plot {
       start: moment.tz(maxInterval.start, timeZone),
       end: moment.tz(maxInterval.end, timeZone)
     };
-    this._options = options ? options : {};
+    this._options = options;
 
     this._tickReferenceTime = this._maxInterval.start.clone().startOf('year');
 
@@ -83,6 +83,7 @@ class Plot {
     }
     legendRoot.append('div')
         .attr('id', 'wxplot-legend');
+
     this._updateControls();
 
     let minIntervalLength;
@@ -111,31 +112,22 @@ class Plot {
       this._lineGenerator.curve(d3.curveMonotoneX);
     }
 
-    this._initializeCanvas();
+    this._initializeCanvases();
     this._initializeZoom();
     this._initializeBrush();
 
-    // It's much simple to remove the canvas and brush and recreate them then
-    // to write more code to update them. Resizes occur infrequently so
-    // whatever performance benefits there are to modifying don't matter.
+    // Various plot elements need to be updated if the canvas root's size
+    // changes.
     const ResizeSensor = require('css-element-queries/src/ResizeSensor');
-    new ResizeSensor(this._canvasRoot.node(), () => {
-      this._canvas.remove();
-      this._zoomBox.remove();
-      this._brushBox.remove();
-      d3.select('#wxplot-indicator-brush').remove();
-      this._initializeCanvas();
-      this._initializeZoom();
-      this._initializeBrush();
-      this._render();}
-    );
+    new ResizeSensor(this._canvasRoot.node(), this._resized.bind(this));
 
-    /*    
+    /*
      * This structure is used to determine the period of x-axis ticks and their
-     * format. We don't use moment durations for the period because they are too
-     * general. The value property of a period should be an integer. The unit
-     * should be hours, days, months, or years. If the unit is hours or days
-     * there is an additional constraint described by the firstTick function.
+     * format. We don't use moment durations for the period because they are
+     * too general. The value property of a period should be an integer. The
+     * unit should be hours, days, months, or years. If the unit is hours or
+     * days there is an additional constraint described by the firstTick
+     * function.
      */
     this._xTickPeriods = [{
         format: 'h A',
@@ -180,32 +172,45 @@ class Plot {
     }
   }
 
-  // Creates a canvas for drawing the plot's axes and traces. The size of the
-  // canvas is set in CSS and an appropriate size is calculated for canvas
-  // buffer. The canvas's area is divided into the traceBox, which contains the
-  // traces, and the margins, which contain the axes. initializeCanvas
-  // calculates the size of the margins. It adjusts the D3 scales based on size
-  // of traceBox. It also creates a D3 zoom to allow panning and zooming the
-  // plot.
-  _initializeCanvas(yTickLabelChars) {
-    this._canvas = this._canvasRoot.append('canvas')
-        .attr('id', 'wxplot-canvas');
-    const plotStyle = getComputedStyle(this._canvas.node());
-    this._width = parseFloat(plotStyle.width);
-    this._height = parseFloat(plotStyle.height);
-    const LINE_HEIGHT = 1.2;
-    this._textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
-
+  // Creates a new canvas and appends it to root, a DOM node. The canvas is
+  // positioned absolutely with offset specified by x and y.
+  // Returns a CanvasRenderingContext2D for the created canvas.
+  _createCanvas(x, y, width, height, root, id) {
+    const canvas = document.createElement('canvas');
+    root.appendChild(canvas);
+    canvas.id = id;
     // To produce a crisp image, the dimensions of the canvas buffer should
     // equal the dimensions in physical pixels of the rendered canvas on the
     // screen of the user's device. To accomplish this the canvas buffer is set
     // to its CSS dimensions multiplied by devicePixelRatio. The context is
     // scaled so the canvas can be treated as if it had its CSS dimensions when
     // drawing.
-    this._canvas.attr('width', devicePixelRatio * this._width)
-        .attr('height', devicePixelRatio * this._height);
+    canvas.setAttribute('width', devicePixelRatio * width);
+    canvas.setAttribute('height', devicePixelRatio * height);
+    canvas.style.setProperty('position', 'absolute');
+    canvas.style.setProperty('left', x + 'px');
+    canvas.style.setProperty('top', y + 'px');
+    canvas.style.setProperty('width', width + 'px');
+    canvas.style.setProperty('height', height + 'px');
+    const context = canvas.getContext('2d');
+    context.scale(devicePixelRatio, devicePixelRatio);
+    return context;
+  }
 
-    this._context = this._canvas.node().getContext('2d');
+  // Creates canvases for drawing the plot's axes and traces.
+  _initializeCanvases(yTickLabelChars) {
+    this._canvases = document.createElement('div');
+    this._canvasRoot.node().appendChild(this._canvases);
+    this._canvases.id = 'wxplot-canvases';
+
+    const plotStyle = getComputedStyle(this._canvasRoot.node());
+    this._width = parseFloat(plotStyle.width);
+    this._height = parseFloat(plotStyle.height);
+    const LINE_HEIGHT = 1.2;
+    this._textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
+
+    this._context = this._createCanvas(0, 0, this._width, this._height,
+                                       this._canvases, 'wxplot-canvas');
     this._context.font = plotStyle['font-size'] + ' '
       + plotStyle['font-family'];
     const zeroWidthPx = this._context.measureText('0').width;
@@ -218,14 +223,18 @@ class Plot {
       left: Math.ceil(this._textHeightPx + TICK_SIZE_IN_PX + TICK_PADDING_IN_PX
         + this._yTickLabelChars*zeroWidthPx + 2)};
     this._traceBoxWidth = this._width - this._margin.left - this._margin.right;
-    this._traceBoxHeight = this._height - this._margin.top - this._margin.bottom;
-    this._context.scale(devicePixelRatio, devicePixelRatio);
+    this._traceBoxHeight = this._height - this._margin.top
+      - this._margin.bottom;
     this._context.translate(this._margin.left, this._margin.top);
+
+    this._traceBoxContext = this._createCanvas(
+      this._margin.left, this._margin.top, this._traceBoxWidth,
+      this._traceBoxHeight, this._canvases, 'wxplot-trace-box');
 
     this._xScale.range([0, this._traceBoxWidth]);
     this._origXScale = this._xScale;
     this._yScale.range([this._traceBoxHeight, 0]);
-    this._lineGenerator.context(this._context);
+    this._lineGenerator.context(this._traceBoxContext);
 
     this._yTickCount = Math.floor(this._height / (this._textHeightPx + 36));
   }
@@ -321,7 +330,9 @@ class Plot {
       .attr('id', 'wxplot-help-button')
       .text('?')
       .on('click', () => {
-        document.getElementById('wxplot-help-box').classList.toggle('wxplot-hide');
+        document
+          .getElementById('wxplot-help-box')
+            .classList.toggle('wxplot-hide');
         const button = document.getElementById('wxplot-help-button');
         button.classList.toggle('wxplot-pressed');
         button.blur();
@@ -337,12 +348,18 @@ class Plot {
       .attr('id', 'wxplot-help-close-button')
       .text('x')
       .on('click', () => {
-        document.getElementById('wxplot-help-box').classList.add('wxplot-hide');
-        document.getElementById('wxplot-help-button').classList.remove('wxplot-pressed');
+        document
+          .getElementById('wxplot-help-box')
+            .classList.add('wxplot-hide');
+        document
+          .getElementById('wxplot-help-button')
+            .classList.remove('wxplot-pressed');
       })
-    helpDiv.append('span')
-      .html('Use the mouse or touch to pan/zoom.<br>\
-            Drag in the violet box below the x-axis to zoom to a certain region.');
+    helpDiv
+      .append('span')
+        .html('Use the mouse or touch to pan/zoom.<br>\
+              Drag in the violet box below the x-axis to zoom to a certain \
+              region.');
   
 
     // Add a row of buttons to control the timespan
@@ -359,7 +376,7 @@ class Plot {
       {value: 5, unit:'y'},
       {value: 10, unit:'y'},
       {unit:'max'}
-    ]
+    ];
 
     for (const timespan of timespans) {
       const button = timespanForm.append('input')
@@ -420,8 +437,8 @@ class Plot {
 
   /*
    * Parses the control inputs. If they represent a valid interval, the plot is
-   * updated to display that interval. Otherwise an error message indicating the
-   * problem is displayed.
+   * updated to display that interval. Otherwise an error message indicating
+   * the problem is displayed.
    */
   _processStartEndDateForm() {
     let start = moment.tz(this._controlForm.start.property('value'),
@@ -433,7 +450,8 @@ class Plot {
     if (!start.isValid() || !end.isValid()) {
       this._controlForm.start.classed('wxplot-input-error', !start.isValid());
       this._controlForm.end.classed('wxplot-input-error', !end.isValid());
-      this._controlForm.errorMessage.text('Invalid Date (must have format MM/DD/YYYY)');
+      this._controlForm.errorMessage.text(
+        'Invalid Date (must have format MM/DD/YYYY)');
       return;
     }
 
@@ -530,7 +548,8 @@ class Plot {
       this._controlForm.end.classed('wxplot-input-error', false);
       this._controlForm.errorMessage.text('')
     }
-    this._controlForm.start.property('value', this._interval.start.format('l'));
+    this._controlForm.start.property('value',
+                                     this._interval.start.format('l'));
     this._controlForm.end.property('value', this._interval.end.format('l'));
 
     updateTimespanControls.call(this);
@@ -591,8 +610,8 @@ class Plot {
    * used).
    * @param {Number} dataParams.minDataPoints - At least this many data points
    * will always be visible.
-   * @param {Number} dataParams.offset - Optional. Shift this trace to the right
-   * (forward in time) this many seconds.
+   * @param {Number} dataParams.offset - Optional. Shift this trace to the
+   * right (forward in time) this many seconds.
    * @param {String} legendText - The text to display in the legend for this
    * trace
    * @param {String} color - The color of the trace. A CSS color value.
@@ -605,15 +624,13 @@ class Plot {
    * group in the legend.
    * @returns {Plot} the object addTrace was called on
    */
-  addTrace(dataParams, legendText, color, dash, width, options) {
-    options = options ? options : {};
-    const dataView = new DataView(Object.assign({}, dataParams))
-        .setInterval((+this._interval.start), (+this._interval.end));
-    dataView.onLoaded(this._render.bind(this));
+  addTrace(name, group, dataParams, color, dash, width, options = {}) {
+    this._traces.push(
+      new Trace(name, group, Object.assign({}, dataParams), 
+      this._traceBoxContext, this._lineGenerator, color, dash, width,
+      options));
 
-    // If a legend group isn't specified, put the label in the empty string
-    // group, which will not have a group title on the legend.
-    const group = 'group' in options ? options.group : '';
+    const legendText = name;
     const legend = document.getElementById('wxplot-legend');
     const groups = legend.children;
     let groupTraces;
@@ -636,7 +653,7 @@ class Plot {
     }
 
     // Add a label and canvas with a line sample to the legend group for this
-    // trace
+    // trace.
     const legendNode = document.createElement('div');
     groupTraces.appendChild(legendNode);
     legendNode.classList.add('wxplot-legend-trace');
@@ -660,16 +677,16 @@ class Plot {
     ctx.setLineDash(dash);
     ctx.strokeStyle = color;
     ctx.stroke();
+    return this;
+  }
 
-    this._traces.push({
-        legendText,
-        legendNode,
-        width,
-        color,
-        dash,
-        dataView
-    });
-
+  /**
+   * Loads data for newly added traces and redraws the plot once all data has
+   * loaded.
+   * @returns {Plot} the object loadTracesAndRedraw was called on.
+   */
+  loadTracesAndRedraw() {
+    this._setTraceIntervals();
     return this;
   }
 
@@ -681,29 +698,37 @@ class Plot {
   }
 
   /**
-   * Removes a trace from the plot
-   * @param {String} legendText - The legend text of the trace to remove (The
-   * same string that was passed to addTrace as the legendText parameter when
-   * the trace was added).
+   * Removes all traces from the plot.
    * @returns {Plot} the object removeTrace was called on.
    */
-  removeTrace(legendText) {
-    this._traces = this._traces.filter(trace => {
-      if(trace.legendText === legendText) {
-        const groupTraces = trace.legendNode.parentNode;
-        groupTraces.removeChild(trace.legendNode);
-        if (groupTraces.children.length === 0) {
-          const group = groupTraces.parentNode;
-          const legend = group.parentNode;
-          legend.removeChild(group);
-        }
-        return false;
-      }
-      return true;
-    });
-    
-    this._render();
+  removeTraces() {
+    this._traces = [];
+    let legend = document.getElementById('wxplot-legend');
+    const legendRoot = legend.parentNode;
+    legendRoot.removeChild(legend);
+    legend = document.createElement('div');
+    legend.id = 'wxplot-legend';
+    legendRoot.appendChild(legend);
     return this;
+  }
+
+  // It's much simpler to remove the canvases, zoom, and brush and recreate
+  // them than it is to update them. Resizes occur infrequently so whatever
+  // performance penalties this approach incurs don't matter.
+  _resized() {
+      document.getElementById('wxplot-canvas-box').removeChild(
+        document.getElementById('wxplot-canvases'));
+      this._zoomBox.remove();
+      this._brushBox.remove();
+      d3.select('#wxplot-indicator-brush').remove();
+      this._initializeCanvases();
+      // Update the traces with the new _traceBoxContext.
+      for (const trace of this._traces) {
+        trace.setContext(this._traceBoxContext);
+      }
+      this._initializeZoom();
+      this._initializeBrush();
+      this._render();
   }
 
   /*
@@ -723,29 +748,31 @@ class Plot {
       end: moment.tz(end, this._timeZone)
     };
     this._updateControls();
+    this._setTraceIntervals();
+    this._render();
+  }
 
+  _setTraceIntervals() {
     // Create a promise for each trace that needs data from the server that
     // resolves once the data has loaded. Promise.all is used to redraw the
     // plot exactly once when all data has loaded.
     let loadedPromises = [];
     for (const trace of this._traces) {
-        trace.dataView.setInterval(start, end);
+        trace.setInterval({
+          start: +this._interval.start,
+          end: +this._interval.end});
         // Don't create a promise for the loading of a DataBlock if we already
         // created one in a previous zoomed call (which happens because
         // multiple plot intervals may map to the same DataBlock), as indicated
         // by dataView.onDataBlockLoaded being non-null.
-        if (trace.dataView.isLoading() && !trace.dataView.onDataBlockLoaded) {
-          loadedPromises.push(new Promise((resolve, reject) => {
-            trace.dataView.onLoaded(resolve);
-          }));
+        if (trace.isLoadingData()) {
+          loadedPromises.push(trace.loadedPromise());
         }
     }
     if (loadedPromises.length > 0) {
       const allTracesLoaded = Promise.all(loadedPromises);
       allTracesLoaded.then(this._render.bind(this));
     }
-
-    this._render();
   }
 
   // Event handler for the D3 brush event. Sets the plot's interval based on
@@ -770,10 +797,9 @@ class Plot {
   _updateYScale() {
     let extents = [];
     for (const trace of this._traces) {
-      if (!trace.dataView.isLoaded()) continue;
-      let data = trace.dataView.getDisplayData();
-      if (data.length > 0) {
-        extents.push(d3.extent(data, d => d[1]));
+      const extent = trace.dataExtent();
+      if (extent) {
+        extents.push(extent);
       }
     }
 
@@ -800,8 +826,8 @@ class Plot {
   /*
    * @param {string} dateFormatString - A format specifier for a moment
    * @returns A function that takes a unix time in ms and returns a string
-   * containing that time formatted according to dateFormatString, in the plot's
-   * timeZone. 
+   * containing that time formatted according to dateFormatString, in the 
+   * plot's timeZone. 
    */
   _makeTickFormatter(dateFormatString) {
     return d => moment.tz(d, this._timeZone).format(dateFormatString);
@@ -809,10 +835,11 @@ class Plot {
 
   /*
    * Returns an object with the properties period and format. Period is the
-   * period between x-axis ticks. It is represented as an object with properties
-   * unit and value. Unit is a string representing a quantity of time suitable
-   * for moment.add and value is an integer. Format is a function like those
-   * returned by makeTickFormatter, which is used to format tick labels.
+   * period between x-axis ticks. It is represented as an object with
+   * properties unit and value. Unit is a string representing a quantity of
+   * time suitable for moment.add and value is an integer. Format is a function
+   * like those returned by makeTickFormatter, which is used to format tick
+   * labels.
    */
   _tickOptions() {
     const MIN_LABEL_PADDING_IN_PX = 20;
@@ -829,10 +856,10 @@ class Plot {
   /*
    * tickPeriod is an object representing the period of x-axis ticks, like that
    * in the period property of the object returned by tickOptions. Returns the
-   * time of the first tick in the plot's current interval as a unix time in ms. 
-   * If the tick period is greater than one, there are multiple choices for
-   * where to put the first tick (e.g. if the tick period is three days, there
-   * are three possible times for the first tick that align with day
+   * time of the first tick in the plot's current interval as a unix time in
+   * ms.  If the tick period is greater than one, there are multiple choices
+   * for where to put the first tick (e.g. if the tick period is three days,
+   * there are three possible times for the first tick that align with day
    * boundaries). It would be jarring to have the location of the tick marks
    * change as the plot is panned, so in order to always choose the same time
    * for a tick when there are multiple options, a reference time is used. All
@@ -876,12 +903,12 @@ class Plot {
    * plot is panned, the next tick will be placed at 3 am, even if the actual
    * time difference between midnight and 3 am is two or four hours. If the
    * daylight savings time change were considered when choosing the next tick,
-   * ticks would occurs at 2 am, 5 am, 8 am, ... or 4 am, 7 am, 10 am, ..., and,
-   * if the plot were panned to the following day, they would jump back to 12
-   * am, 3 am, 6 am, ..., the times they are normally at. Ignoring the daylight
-   * savings time change prevents the ticks from jumping. Note that the plot
-   * uses unix time for positioning points and ticks on the x-axis, so the
-   * choice of tick times in no way affects the accuracy of the plot.
+   * ticks would occurs at 2 am, 5 am, 8 am, ... or 4 am, 7 am, 10 am, ...,
+   * and, if the plot were panned to the following day, they would jump back to
+   * 12 am, 3 am, 6 am, ..., the times they are normally at. Ignoring the
+   * daylight savings time change prevents the ticks from jumping. Note that
+   * the plot uses unix time for positioning points and ticks on the x-axis, so
+   * the choice of tick times in no way affects the accuracy of the plot.
    */
   _ticks() {
     var tickOpts = this._tickOptions();
@@ -956,16 +983,11 @@ class Plot {
     this._updateYScale();
     this._context.clearRect(-this._margin.left, -this._margin.top, this._width,
       this._height);
-    this._context.fillStyle = 'white';
-    this._context.fillRect(0, 0, this._traceBoxWidth ,this._traceBoxHeight);
+    this._traceBoxContext.clearRect(0, 0, this._traceBoxWidth, 
+                                    this._traceBoxHeight);
     this._drawXAxis();
     this._drawYAxis();
     this._drawTraces();
-
-    this._context.lineWidth = 1;
-    this._context.setLineDash([]);
-    this._context.strokeStyle = 'gray';
-    this._context.strokeRect(-0.5, -0.5, this._traceBoxWidth, this._traceBoxHeight + 1);
   }
 
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
@@ -1009,15 +1031,19 @@ class Plot {
         continue;
       }
       this._context.fillStyle = 'black';
-      this._context.fillText(tickFormat(tick), tickX, this._traceBoxHeight + TICK_SIZE_IN_PX);
+      this._context.fillText(
+        tickFormat(tick), tickX, this._traceBoxHeight + TICK_SIZE_IN_PX);
       prevTickX = tickX;
     }
   }
 
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
   _drawYAxis() {
-    var ticks = this._yTicks(),
-        tickFormat = (number) => number.toLocaleString(undefined, {maximumFractionDigits: ticks.fractionDigits});
+    const ticks = this._yTicks();
+    const tickFormat = (number) => {
+      return number.toLocaleString(
+        undefined, {maximumFractionDigits: ticks.fractionDigits});
+    };
 
     this._context.beginPath();
     for (const tick of ticks.values) {
@@ -1044,7 +1070,8 @@ class Plot {
     this._context.textBaseline = 'middle';
     this._context.fillStyle = 'black';
     for (const tick of ticks.values) {
-      this._context.fillText(tickFormat(tick), -TICK_SIZE_IN_PX - TICK_PADDING_IN_PX,
+      this._context.fillText(
+        tickFormat(tick), -TICK_SIZE_IN_PX - TICK_PADDING_IN_PX,
         this._yScale(tick));
     }
 
@@ -1053,20 +1080,15 @@ class Plot {
     this._context.textAlign = 'center';
     this._context.textBaseline = 'top';
     this._context.font = 'bold ' + this._context.font;
-    this._context.fillText(this._yLabel, -this._traceBoxHeight/2, -this._margin.left);
+    this._context.fillText(
+      this._yLabel, -this._traceBoxHeight/2, -this._margin.left);
     this._context.restore();
   }
 
   // Draws the traces
   _drawTraces() {
     for (const trace of this._traces) {
-      if (!trace.dataView.isLoaded()) continue;
-      this._context.beginPath();
-      this._lineGenerator(trace.dataView.getDisplayData());
-      this._context.lineWidth = trace.width;
-      this._context.setLineDash(trace.dash);
-      this._context.strokeStyle = trace.color;
-      this._context.stroke();
+      trace.draw();
     }
   }
 }
