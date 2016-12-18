@@ -6,12 +6,12 @@ module.exports = class Trace {
   // Context is a CanvasRenderingContext2D, and lineGenerator is a D3 line
   // generator, both of which are used by the trace to draw itself.
   // See addTrace in plot.js for a description of the other parameters.
-  constructor(name, group, dataParams, context, lineGenerator, color, dash,
-              width, options = {}) {
+  constructor(name, group, dataParams, lineGenerator, traceBox, color, dash,
+      width, options = {}) {
     this._name = name;
     this._dataParams = dataParams;
-    this._context = context;
     this._lineGenerator = lineGenerator;
+    this._traceBox = traceBox;
     this._color = color;
     this._dash = dash;
     this._width = width;
@@ -19,10 +19,6 @@ module.exports = class Trace {
     this._interval = null;
     this._data = null;
     this._dataPromise = null;
-  }
-
-  setContext(context) {
-    this._context = context;
   }
 
   name() {
@@ -122,12 +118,22 @@ module.exports = class Trace {
     if (!this._data) {
       return this;
     }
-    this._context.beginPath();
+    const context = this._lineGenerator.context();
+    context.save()
+    context.translate(this._traceBox.x, this._traceBox.y);
+    context.beginPath();
+    // For reasons explained in the comment for the getWideData method in
+    // DataFetcher, several points are loaded outside the plot's interval. To
+    // avoid drawing outside the traceBox we need a clipping rectangle.
+    context.rect(0, 0, this._traceBox.width, this._traceBox.height);
+    context.clip();
+    context.beginPath();
     this._lineGenerator(this._data);
-    this._context.lineWidth = this._width;
-    this._context.setLineDash(this._dash);
-    this._context.strokeStyle = this._color;
-    this._context.stroke();
+    context.lineWidth = this._width;
+    context.setLineDash(this._dash);
+    context.strokeStyle = this._color;
+    context.stroke();
+    context.restore();
     return this;
   }
 

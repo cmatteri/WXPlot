@@ -92,7 +92,6 @@ function updateTraces(plotKey, showMinMax) {
       }
       dataParams.aggregateType = aggType;
       const traceOptions = {
-        group: trace.displayName
       };
       plot.addTrace(aggType, trace.displayName, dataParams,
                     colors[color_index], [], aggType === 'avg' ? 1.5 : 0.5,

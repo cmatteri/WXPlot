@@ -112,7 +112,7 @@ class Plot {
       this._lineGenerator.curve(d3.curveMonotoneX);
     }
 
-    this._initializeCanvases();
+    this._initializeCanvas();
     this._initializeZoom();
     this._initializeBrush();
 
@@ -172,71 +172,48 @@ class Plot {
     }
   }
 
-  // Creates a new canvas and appends it to root, a DOM node. The canvas is
-  // positioned absolutely with offset specified by x and y.
-  // Returns a CanvasRenderingContext2D for the created canvas.
-  _createCanvas(x, y, width, height, root, id) {
+  // Creates canvas for drawing the plot's axes and traces.
+  _initializeCanvas(yTickLabelChars) {
+    const plotStyle = getComputedStyle(this._canvasRoot.node());
+    this._canvasWidth = parseFloat(plotStyle.width);
+    this._canvasHeight = parseFloat(plotStyle.height);
+    const LINE_HEIGHT = 1.2;
+    this._textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
+
     const canvas = document.createElement('canvas');
-    root.appendChild(canvas);
-    canvas.id = id;
+    this._canvasRoot.node().appendChild(canvas);
+    canvas.id = 'wxplot-canvas';
     // To produce a crisp image, the dimensions of the canvas buffer should
     // equal the dimensions in physical pixels of the rendered canvas on the
     // screen of the user's device. To accomplish this the canvas buffer is set
     // to its CSS dimensions multiplied by devicePixelRatio. The context is
     // scaled so the canvas can be treated as if it had its CSS dimensions when
     // drawing.
-    canvas.setAttribute('width', devicePixelRatio * width);
-    canvas.setAttribute('height', devicePixelRatio * height);
-    canvas.style.setProperty('position', 'absolute');
-    canvas.style.setProperty('left', x + 'px');
-    canvas.style.setProperty('top', y + 'px');
-    canvas.style.setProperty('width', width + 'px');
-    canvas.style.setProperty('height', height + 'px');
-    const context = canvas.getContext('2d');
-    context.scale(devicePixelRatio, devicePixelRatio);
-    return context;
-  }
-
-  // Creates canvases for drawing the plot's axes and traces.
-  _initializeCanvases(yTickLabelChars) {
-    this._canvases = document.createElement('div');
-    this._canvasRoot.node().appendChild(this._canvases);
-    this._canvases.id = 'wxplot-canvases';
-
-    const plotStyle = getComputedStyle(this._canvasRoot.node());
-    this._width = parseFloat(plotStyle.width);
-    this._height = parseFloat(plotStyle.height);
-    const LINE_HEIGHT = 1.2;
-    this._textHeightPx = parseFloat(plotStyle['font-size']) * LINE_HEIGHT;
-
-    this._context = this._createCanvas(0, 0, this._width, this._height,
-                                       this._canvases, 'wxplot-canvas');
+    canvas.setAttribute('width', devicePixelRatio * this._canvasWidth);
+    canvas.setAttribute('height', devicePixelRatio * this._canvasHeight);
+    this._context = canvas.getContext('2d');
+    this._context.scale(devicePixelRatio, devicePixelRatio);
     this._context.font = plotStyle['font-size'] + ' '
       + plotStyle['font-family'];
     const zeroWidthPx = this._context.measureText('0').width;
 
-    this._margin = {
-      top: Math.ceil(this._textHeightPx / 2),
-      right: 15,
-      bottom: Math.ceil(this._textHeightPx + TICK_SIZE_IN_PX),
-      // The last 2 px are extra padding
-      left: Math.ceil(this._textHeightPx + TICK_SIZE_IN_PX + TICK_PADDING_IN_PX
-        + this._yTickLabelChars*zeroWidthPx + 2)};
-    this._traceBoxWidth = this._width - this._margin.left - this._margin.right;
-    this._traceBoxHeight = this._height - this._margin.top
-      - this._margin.bottom;
-    this._context.translate(this._margin.left, this._margin.top);
+    this._xAxisHeight = Math.ceil(this._textHeightPx + TICK_SIZE_IN_PX);
+    this._traceBox = {};
+    const padding = 2;
+    this._traceBox.x = Math.ceil(
+      this._textHeightPx + TICK_SIZE_IN_PX + TICK_PADDING_IN_PX
+      + this._yTickLabelChars*zeroWidthPx + padding);
+    this._traceBox.y = Math.ceil(this._textHeightPx / 2);
+    this._traceBox.width = this._canvasWidth - this._traceBox.x;
+    this._traceBox.height = this._canvasHeight - this._traceBox.y
+      - this._xAxisHeight;
 
-    this._traceBoxContext = this._createCanvas(
-      this._margin.left, this._margin.top, this._traceBoxWidth,
-      this._traceBoxHeight, this._canvases, 'wxplot-trace-box');
-
-    this._xScale.range([0, this._traceBoxWidth]);
+    this._xScale.range([0, this._traceBox.width]);
     this._origXScale = this._xScale;
-    this._yScale.range([this._traceBoxHeight, 0]);
-    this._lineGenerator.context(this._traceBoxContext);
+    this._yScale.range([this._traceBox.height, 0]);
+    this._lineGenerator.context(this._context);
 
-    this._yTickCount = Math.floor(this._height / (this._textHeightPx + 36));
+    this._yTickCount = Math.floor(this._canvasHeight / (this._textHeightPx + 36));
   }
 
   _initializeZoom() {
@@ -245,23 +222,23 @@ class Plot {
     const maxScale = (this._interval.end - this._interval.start)
       / this._minIntervalLength;
     this._zoom = d3.zoom()
-        .extent([[0, 0], [this._traceBoxWidth, this._traceBoxHeight]])
+        .extent([[0, 0], [this._traceBox.width, this._traceBox.height]])
         .scaleExtent([minScale, maxScale])
         .translateExtent([[this._origXScale(this._maxInterval.start), 0],
-          [this._origXScale(this._maxInterval.end), this._height]])
+          [this._origXScale(this._maxInterval.end), this._canvasHeight]])
         .on('zoom', this._zoomed.bind(this));
     this._zoomBox = this._canvasRoot.append('div')
       .attr('id', 'wxplot-zoom')
-      .style('width', this._traceBoxWidth + 'px')
-      .style('height', this._traceBoxHeight + 'px')
-      .style('margin-top', this._margin.top + 'px')
-      .style('margin-left', this._margin.left + 'px')
+      .style('width', this._traceBox.width + 'px')
+      .style('height', this._traceBox.height + 'px')
+      .style('margin-top', this._traceBox.y + 'px')
+      .style('margin-left', this._traceBox.x + 'px')
     this._zoomBox.call(this._zoom);
   }
 
   _initializeBrush() {
     this._brush = d3.brushX()
-      .extent([[0, 0], [this._traceBoxWidth, this._margin.bottom]])
+      .extent([[0, 0], [this._traceBox.width, this._xAxisHeight]])
       .on("end", this._brushed.bind(this))
       .on("brush", () => {
         const sel = d3.event.selection;
@@ -277,21 +254,21 @@ class Plot {
       });
 
     this._brushBox = this._canvasRoot.append('svg')
-        .attr('width', this._traceBoxWidth)
-        .attr('height', this._margin.bottom)
+        .attr('width', this._traceBox.width)
+        .attr('height', this._xAxisHeight)
         .attr('id', 'wxplot-brush')
-        .style('margin-left', this._margin.left + 'px')
+        .style('margin-left', this._traceBox.x + 'px')
         .call(this._brush);
 
     this._brushIndicatorRect = this._canvasRoot.append('svg')
-        .attr('width', this._traceBoxWidth)
-        .attr('height', this._traceBoxHeight)
+        .attr('width', this._traceBox.width)
+        .attr('height', this._traceBox.height)
         .attr('id', 'wxplot-brush-indicator')
-        .style('margin-top', this._margin.top + 'px')
-        .style('margin-left', this._margin.left + 'px')
+        .style('margin-top', this._traceBox.y + 'px')
+        .style('margin-left', this._traceBox.x + 'px')
         .append('rect')
         .attr('y', 0)
-        .attr('height', this._traceBoxHeight)
+        .attr('height', this._traceBox.height)
   }
 
   // Creates the input elements used to control/display the plot's interval
@@ -625,10 +602,9 @@ class Plot {
    * @returns {Plot} the object addTrace was called on
    */
   addTrace(name, group, dataParams, color, dash, width, options = {}) {
-    this._traces.push(
-      new Trace(name, group, Object.assign({}, dataParams), 
-      this._traceBoxContext, this._lineGenerator, color, dash, width,
-      options));
+    this._traces.push(new Trace(
+      name, group, Object.assign({}, dataParams), this._lineGenerator, 
+      this._traceBox, color, dash, width, options));
 
     const legendText = name;
     const legend = document.getElementById('wxplot-legend');
@@ -717,15 +693,11 @@ class Plot {
   // performance penalties this approach incurs don't matter.
   _resized() {
       document.getElementById('wxplot-canvas-box').removeChild(
-        document.getElementById('wxplot-canvases'));
+        document.getElementById('wxplot-canvas'));
       this._zoomBox.remove();
       this._brushBox.remove();
       d3.select('#wxplot-indicator-brush').remove();
-      this._initializeCanvases();
-      // Update the traces with the new _traceBoxContext.
-      for (const trace of this._traces) {
-        trace.setContext(this._traceBoxContext);
-      }
+      this._initializeCanvas();
       this._initializeZoom();
       this._initializeBrush();
       this._render();
@@ -742,7 +714,7 @@ class Plot {
     const start = this._xScale.invert(0);
 
     // The latest visible time.
-    const end = this._xScale.invert(this._traceBoxWidth); 
+    const end = this._xScale.invert(this._traceBox.width); 
     this._interval = {
       start: moment.tz(start, this._timeZone),
       end: moment.tz(end, this._timeZone)
@@ -981,26 +953,35 @@ class Plot {
   // Draws the x-axis, y-axis, and the traces
   _render() {
     this._updateYScale();
-    this._context.clearRect(-this._margin.left, -this._margin.top, this._width,
-      this._height);
-    this._traceBoxContext.clearRect(0, 0, this._traceBoxWidth, 
-                                    this._traceBoxHeight);
+    this._context.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
+    this._context.fillStyle = 'white';
+    this._context.fillRect(
+      this._traceBox.x, this._traceBox.y, this._traceBox.width,
+      this._traceBox.height);
     this._drawXAxis();
     this._drawYAxis();
     this._drawTraces();
+
+    this._context.lineWidth = 1;
+    this._context.setLineDash([]);
+    this._context.strokeStyle = 'gray';
+    this._context.strokeRect(
+      this._traceBox.x - 0.5, this._traceBox.y - 0.5, this._traceBox.width,
+      this._traceBox.height);
   }
 
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
   _drawXAxis() {
+    this._context.translate(this._traceBox.x, this._traceBox.y);
     const tickMarks = this._ticks(this._interval.start, this._interval.end);
     const tickValues = tickMarks.ticks;
     const tickFormat = tickMarks.params.formatter;
 
     this._context.beginPath();
     for (const tick of tickValues) {
-      const xPos = this._xScale(tick);
-      this._context.moveTo(xPos, this._traceBoxHeight);
-      this._context.lineTo(xPos, this._traceBoxHeight + TICK_SIZE_IN_PX);
+      const xPos = Math.round(this._xScale(tick)) + 0.5;
+      this._context.moveTo(xPos, this._traceBox.height);
+      this._context.lineTo(xPos, this._traceBox.height + TICK_SIZE_IN_PX);
     }
 
     this._context.lineWidth = 1;
@@ -1011,9 +992,9 @@ class Plot {
     // Draw vertical grid lines
     this._context.beginPath();
     for (const tick of tickValues) {
-      const xPos = this._xScale(tick);
+      const xPos = Math.round(this._xScale(tick)) + 0.5;
       this._context.moveTo(xPos, 0);
-      this._context.lineTo(xPos, this._traceBoxHeight);
+      this._context.lineTo(xPos, this._traceBox.height);
     }
     this._context.strokeStyle = 'lightgray';
     this._context.stroke();
@@ -1032,9 +1013,10 @@ class Plot {
       }
       this._context.fillStyle = 'black';
       this._context.fillText(
-        tickFormat(tick), tickX, this._traceBoxHeight + TICK_SIZE_IN_PX);
+        tickFormat(tick), tickX, this._traceBox.height + TICK_SIZE_IN_PX);
       prevTickX = tickX;
     }
+    this._context.translate(-this._traceBox.x, -this._traceBox.y);
   }
 
   // modified from https://bl.ocks.org/mbostock/1550e57e12e73b86ad9e
@@ -1045,11 +1027,12 @@ class Plot {
         undefined, {maximumFractionDigits: ticks.fractionDigits});
     };
 
+    this._context.translate(this._traceBox.x, this._traceBox.y);
     this._context.beginPath();
     for (const tick of ticks.values) {
-      const yPos = this._yScale(tick);
-      this._context.moveTo(0, yPos);
-      this._context.lineTo(-TICK_SIZE_IN_PX, yPos);
+      const yPos = Math.round(this._yScale(tick)) + 0.5;
+      this._context.moveTo(-TICK_SIZE_IN_PX, yPos);
+      this._context.lineTo(0, yPos);
     }
 
     this._context.lineWidth = 1;
@@ -1059,9 +1042,9 @@ class Plot {
 
     this._context.beginPath();   
     for (const tick of ticks.values) {
-      const yPos = this._yScale(tick);
+      const yPos = Math.round(this._yScale(tick)) + 0.5;
       this._context.moveTo(0, yPos);
-      this._context.lineTo(this._traceBoxWidth, yPos);
+      this._context.lineTo(this._traceBox.width, yPos);
     }
     this._context.strokeStyle = 'lightgray';
     this._context.stroke();
@@ -1081,8 +1064,9 @@ class Plot {
     this._context.textBaseline = 'top';
     this._context.font = 'bold ' + this._context.font;
     this._context.fillText(
-      this._yLabel, -this._traceBoxHeight/2, -this._margin.left);
+      this._yLabel, -this._traceBox.height/2, -this._traceBox.x);
     this._context.restore();
+    this._context.translate(-this._traceBox.x, -this._traceBox.y);
   }
 
   // Draws the traces
