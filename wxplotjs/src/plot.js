@@ -189,7 +189,8 @@ class Plot {
     this._yScale.range([this._traceBox.height, 0]);
     this._lineGenerator.context(this._context);
 
-    this._yTickCount = Math.floor(this._canvasHeight / (this._textHeightPx + 36));
+    this._yTickCount = Math.floor(
+      this._canvasHeight / (this._textHeightPx + 36));
   }
 
   _initializeZoom() {
@@ -340,7 +341,8 @@ class Plot {
       if (timespan.unit === 'max') {
         button.attr('value', 'max')
         .on('click', () => {
-          this.setInterval(+this._maxInterval.start, +this._maxInterval.end);
+          this.setIntervalAnimate(+this._maxInterval.start,
+                                  +this._maxInterval.end);
           button.node().blur()
         })
       } else {
@@ -375,15 +377,16 @@ class Plot {
     const possibleStart = this._interval.end.clone().subtract(timespan)
     if (possibleStart.isSameOrAfter(this._maxInterval.start)) {
       // we good
-      this.setInterval(+possibleStart, +this._interval.end)
+      this.setIntervalAnimate(+possibleStart, +this._interval.end)
       return;
     } else {
       const possibleEnd = this._maxInterval.start.clone().add(timespan)
       if (possibleEnd.isSameOrBefore(this._maxInterval.end)) {
         // we good
-        this.setInterval(+this._maxInterval.start, +possibleEnd)
+        this.setIntervalAnimate(+this._maxInterval.start, +possibleEnd)
       } else {
-        this.setInterval(+this._maxInterval.start, +this._maxInterval.end)
+        this.setIntervalAnimate(+this._maxInterval.start,
+                                +this._maxInterval.end)
       }
     }
   }
@@ -418,7 +421,7 @@ class Plot {
     this._controlForm.start.classed('wxplot-input-error', false);
     this._controlForm.end.classed('wxplot-input-error', false);
     this._controlForm.errorMessage.text('');
-    this.setInterval(start, end);      
+    this.setIntervalAnimate(start, end);      
   }
 
   // Updates the plot's controls to reflect the plot's current interval
@@ -508,12 +511,16 @@ class Plot {
     updateTimespanControls.call(this);
   }
 
+  setIntervalAnimate(start, end) {
+    this.setInterval(start, end, true);
+  }
+
   /**
    * Sets the plot's interval
    * @param {Number} start - Unix time of the start of the interval in ms.
    * @param {Number} end - Unix time of the end of the interval in ms.
    */
-  setInterval(start, end) {
+  setInterval(start, end, animate=false) {
     if (start < this._maxInterval.start) {
       start = this._maxInterval.start;
     }
@@ -536,8 +543,10 @@ class Plot {
     const baseRange = this._origXScale.range();
     const scaleFactor = (baseRange[1] - baseRange[0]) / (endX - startX);
     const xShift = scaleFactor*baseRange[0] - startX;
-    this._zoomBox.transition().duration(500).call(this._zoom.transform,
-      d3.zoomIdentity.scale(scaleFactor).translate(xShift, 0));
+    const selection = animate ? this._zoomBox.transition().duration(500)
+      : this._zoomBox;
+    selection.call(this._zoom.transform,
+                   d3.zoomIdentity.scale(scaleFactor).translate(xShift, 0));
   }
 
   /**
@@ -723,7 +732,7 @@ class Plot {
     // Clear the brush selection
     this._brushBox.call(this._brush.move, null);
     const interval = selection.map(this._xScale.invert, this._xScale);
-    this.setInterval(interval[0], interval[1]);
+    this.setIntervalAnimate(interval[0], interval[1]);
   }
 
   /*
