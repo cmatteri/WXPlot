@@ -7,8 +7,6 @@ document.getElementById('plot-hide-controls').addEventListener('click',
     button.blur();
     document.getElementById('plot-hideable-controls').classList.toggle(
       'hide-controls');
-    document.getElementById('plot-controls').classList.toggle(
-      'overflow-scroll');
   }, false);
 
 const plots = {
