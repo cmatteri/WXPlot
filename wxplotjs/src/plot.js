@@ -93,6 +93,10 @@ class Plot {
       this._minIntervalLength = 3600000;
     }
 
+    // this._traceBox is created here, instead of in initializeCanvas, so
+    // references to it stay valid when the trace box's dimensions change.
+    this._traceBox = {};
+
     this._xScale = d3.scaleLinear()
         .domain([interval.start, interval.end]);
 
@@ -133,7 +137,7 @@ class Plot {
       document.getElementById('wxplot-canvas'));
     this._zoomBox.remove();
     this._brushBox.remove();
-    d3.select('#wxplot-indicator-brush').remove();
+    d3.select('#wxplot-brush-indicator').remove();
   }
 
   // Initialize plot elements
@@ -171,7 +175,6 @@ class Plot {
     const zeroWidthPx = this._context.measureText('0').width;
 
     this._xAxisHeight = Math.ceil(this._textHeightPx + TICK_LENGTH_IN_PX);
-    this._traceBox = {};
     const padding = 2;
     this._traceBox.x = Math.ceil(
       this._textHeightPx + TICK_LENGTH_IN_PX + TICK_PADDING_IN_PX
