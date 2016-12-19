@@ -112,14 +112,19 @@ class Plot {
       this._lineGenerator.curve(d3.curveMonotoneX);
     }
 
-    this._initializeCanvas();
-    this._initializeZoom();
-    this._initializeBrush();
+    this._initializePlot()
 
     // Various plot elements need to be updated if the canvas root's size
     // changes.
     const ResizeSensor = require('css-element-queries/src/ResizeSensor');
-    new ResizeSensor(this._canvasRoot.node(), this._resized.bind(this));
+    new ResizeSensor(this._canvasRoot.node(), () => {
+      // It's much simpler to remove the canvases, zoom, and brush and recreate
+      // them than it is to update them. Resizes occur infrequently so whatever
+      // performance penalties this approach incurs don't matter.
+      this._destroyPlot();
+      this._initializePlot();
+      this._render();
+    });
 
     /*
      * This structure is used to determine the period of x-axis ticks and their
@@ -170,6 +175,23 @@ class Plot {
       xTickParams.duration = moment.duration(xTickParams.period.value,
         xTickParams.period.unit)
     }
+  }
+
+  // Removes plot elements created by _initializePlot, so the plot may be
+  // reinitialized.
+  _destroyPlot() {
+    document.getElementById('wxplot-canvas-box').removeChild(
+      document.getElementById('wxplot-canvas'));
+    this._zoomBox.remove();
+    this._brushBox.remove();
+    d3.select('#wxplot-indicator-brush').remove();
+  }
+
+  // Initialize plot elements
+  _initializePlot() {
+      this._initializeCanvas();
+      this._initializeZoom();
+      this._initializeBrush();
   }
 
   // Creates canvas for drawing the plot's axes and traces.
@@ -686,21 +708,6 @@ class Plot {
     legend.id = 'wxplot-legend';
     legendRoot.appendChild(legend);
     return this;
-  }
-
-  // It's much simpler to remove the canvases, zoom, and brush and recreate
-  // them than it is to update them. Resizes occur infrequently so whatever
-  // performance penalties this approach incurs don't matter.
-  _resized() {
-      document.getElementById('wxplot-canvas-box').removeChild(
-        document.getElementById('wxplot-canvas'));
-      this._zoomBox.remove();
-      this._brushBox.remove();
-      d3.select('#wxplot-indicator-brush').remove();
-      this._initializeCanvas();
-      this._initializeZoom();
-      this._initializeBrush();
-      this._render();
   }
 
   /*
