@@ -1,3 +1,4 @@
+const MomentInterval = require('./momentinterval.js');
 const WXPlot = require('./plot.js');
 
 document.getElementById('plot-hide-controls').addEventListener('click',
@@ -125,15 +126,15 @@ const minMaxCheckbox = plotSelect.append('label')
 let plotKey = plotMenu.node().value;
 let showMinMax = minMaxCheckbox.node().checked;
 
+const timeZone = "America/Los_Angeles";
+
 // See readme.md for API documentation.
-const domain = {
-  start: +(new Date("1/1/2015")),
-  end: +Date.now()
-};
-const domainExtent = {
-  start: +(new Date("1/1/2015")), 
-  end: +Date.now()
-};
+const interval = new MomentInterval(moment.tz(new Date("1/1/2015"), timeZone),
+                              moment.tz(Date.now(), timeZone));
+
+const maxInterval = new MomentInterval(moment.tz(new Date("1/1/2015"),
+                                                 timeZone),
+                                       moment.tz(Date.now(), timeZone));
 
 const options = {
   legendRoot: d3.select("#plot-legend"),
@@ -142,6 +143,6 @@ const options = {
 
 const plot = new WXPlot(d3.select("#plot-controls"),
   d3.select("#plot-canvas-inner"), "America/Los_Angeles", "Temperature (F)", 5,
-  domain, domainExtent, options);
+  interval, maxInterval, options);
 
 updateTraces(plotKey, showMinMax);

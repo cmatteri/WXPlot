@@ -71,11 +71,13 @@ A weather data plot.
 
 * [Plot](#Plot)
     * [new Plot(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars, interval, maxInterval, options)](#new_Plot_new)
-    * [.setInterval(start, end)](#Plot+setInterval)
+    * [.setIntervalAnimate(interval)](#Plot+setIntervalAnimate)
+    * [.setInterval(interval)](#Plot+setInterval)
     * [.setYLabel(label)](#Plot+setYLabel) ⇒ <code>[Plot](#Plot)</code>
     * [.addTrace(dataParams, legendText, color, dash, width, options)](#Plot+addTrace) ⇒ <code>[Plot](#Plot)</code>
+    * [.loadTracesAndRedraw()](#Plot+loadTracesAndRedraw) ⇒ <code>[Plot](#Plot)</code>
     * [.getTraces()](#Plot+getTraces) ⇒ <code>Array</code>
-    * [.removeTrace(legendText)](#Plot+removeTrace) ⇒ <code>[Plot](#Plot)</code>
+    * [.removeTraces()](#Plot+removeTraces) ⇒ <code>[Plot](#Plot)</code>
 
 <a name="new_Plot_new"></a>
 
@@ -88,27 +90,36 @@ A weather data plot.
 | timeZone | <code>String</code> | Time zone identifier corresponding to the time zone of the weather station, e.g. 'America/Los_Angeles' |
 | yLabel | <code>String</code> | Label for the vertical axis |
 | yTickLabelChars | <code>Number</code> | The y-axis tick labels will have space for at least this many '0' characters. See the yTicks function comment for details on the formatting of these labels. |
-| interval | <code>Object</code> | Specifies the initial time interval to display e.g. ```{   start: +(new Date("1/1/2015")),   end: +(new Date("1/1/2016")) };``` |
-| interval.start | <code>Number</code> | Unix time of the start of the interval in ms. |
-| interval.end | <code>Number</code> | Unix time of the end of the interval in ms. |
-| maxInterval | <code>Object</code> | An interval object, with the same structure as the interval parameter, that limits the panning/zooming of the plot. |
+| interval | <code>MomentInterval</code> | Specifies the initial time interval to display |
+| maxInterval | <code>MomentInterval</code> | Specifies the maximum interval the plot can be set to |
 | options | <code>Object</code> | Properties of options are optional parameters |
 | options.minIntervalLength | <code>Number</code> | The minimum interval length in ms. Default is one hour. |
 | options.smooth | <code>Boolean</code> | Set to false to not draw smooth traces (by default, WXPlot uses monotone cubic interpolation to produce smooth lines that pass through all data points and do not introduce minima or maxima between points). |
 | options.legendRoot | <code>d3.Selection</code> | The selection the legend will be appended to. |
 | options.timeSpanControlRoot | <code>d3.Selection</code> | The selection the timespan control form will be appended to. |
 
+<a name="Plot+setIntervalAnimate"></a>
+
+### plot.setIntervalAnimate(interval)
+Sets the plot's interval with a 500 ms animation between the old and new
+intervals.
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+
+| Param | Type |
+| --- | --- |
+| interval | <code>Interval</code> &#124; <code>MomentInterval</code> | 
+
 <a name="Plot+setInterval"></a>
 
-### plot.setInterval(start, end)
+### plot.setInterval(interval)
 Sets the plot's interval
 
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| start | <code>Number</code> | Unix time of the start of the interval in ms. |
-| end | <code>Number</code> | Unix time of the end of the interval in ms. |
+| Param | Type |
+| --- | --- |
+| interval | <code>Interval</code> &#124; <code>MomentInterval</code> | 
 
 <a name="Plot+setYLabel"></a>
 
@@ -145,21 +156,38 @@ Adds a new trace
 | options | <code>Object</code> | Properties of options are optional parameters |
 | options.group | <code>String</code> | The trace group. Traces are sorted by group in the legend. |
 
+<a name="Plot+loadTracesAndRedraw"></a>
+
+### plot.loadTracesAndRedraw() ⇒ <code>[Plot](#Plot)</code>
+Loads data for newly added traces and redraws the plot once all data has
+loaded.
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+**Returns**: <code>[Plot](#Plot)</code> - the object loadTracesAndRedraw was called on.  
 <a name="Plot+getTraces"></a>
 
 ### plot.getTraces() ⇒ <code>Array</code>
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
 **Returns**: <code>Array</code> - The legend text of each of the plots traces.  
-<a name="Plot+removeTrace"></a>
+<a name="Plot+removeTraces"></a>
 
-### plot.removeTrace(legendText) ⇒ <code>[Plot](#Plot)</code>
-Removes a trace from the plot
+### plot.removeTraces() ⇒ <code>[Plot](#Plot)</code>
+Removes all traces from the plot.
 
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
 **Returns**: <code>[Plot](#Plot)</code> - the object removeTrace was called on.  
 
+<a name="MomentInterval"></a>
+
+## MomentInterval
+**Kind**: global class  
+<a name="new_MomentInterval_new"></a>
+
+### new MomentInterval(start, end)
+
 | Param | Type | Description |
 | --- | --- | --- |
-| legendText | <code>String</code> | The legend text of the trace to remove (The same string that was passed to addTrace as the legendText parameter when the trace was added). |
+| start | <code>Moment</code> | Moment representing the start of the interval. |
+| end | <code>Moment</code> | Moment representing the end of the interval. |
 
 Please send questions/comments to chrismatteri@gmail.com.

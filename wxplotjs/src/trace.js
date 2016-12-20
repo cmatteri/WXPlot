@@ -139,10 +139,7 @@ module.exports = class Trace {
 
   /**
    * Sets the plot's interval. The Trace acquires data for the new interval.
-   * @param {Object} interval
-   * @param {Number} interval.start - Unix time of the start of the interval in
-   * ms.
-   * @param {Number} interval.end - Unix time of the end of the interval in ms.
+   * @param {Interval|MomentInterval} interval
    * @returns {Trace} the object setInterval was called on.
    */
   setInterval(interval) {

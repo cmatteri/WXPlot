@@ -1,3 +1,5 @@
+const Interval = require('./interval.js');
+
 // Gets data for a trace. Data is loaded from the server in small segments to
 // allow seamless panning and to facilitate caching. The DataFetcher class
 // loads data in groups of four continguous segments, referred to as sections.
@@ -71,8 +73,7 @@ module.exports = class DataFetcher {
     const sectionInterval = this._getSectionInterval(dataInterval);
 
     if (this._sectionInterval
-        && sectionInterval.start === this._sectionInterval.start
-        && sectionInterval.end === this._sectionInterval.end) {
+        && this._sectionInterval.equals(sectionInterval)) {
       return;
     }
 
@@ -111,10 +112,7 @@ module.exports = class DataFetcher {
     const startOfFirstSegment = startOfThirdSegment - 2*_segmentLength;
     const endOflastSegment = startOfFirstSegment + 4*_segmentLength;
 
-    return {
-      start: startOfFirstSegment,
-      end: endOflastSegment
-    };
+    return new Interval(startOfFirstSegment, endOflastSegment);
   }
 
 
@@ -143,10 +141,8 @@ module.exports = class DataFetcher {
     for (let segmentStart = interval.start;
         segmentStart < interval.end;
         segmentStart += segmentLength) {
-      const segmentInterval = {
-        start: segmentStart,
-        end: segmentStart + segmentLength
-      };
+      const segmentInterval = new Interval(segmentStart,
+                                           segmentStart + segmentLength);
       segmentPromises.push(
         this._fetchSegment(segmentInterval, aggregateInterval));
     }
@@ -172,8 +168,7 @@ module.exports = class DataFetcher {
     // If the interval is in the cache, return a segment Promise from the
     // cache.
     for (const entry of this._segmentCache) {
-      if (entry.interval.start === interval.start
-          && entry.interval.end === interval.end) {
+      if (entry.interval.equals(interval)) {
         return entry.segment;
       }
     }

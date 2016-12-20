@@ -1,5 +1,7 @@
-let Trace = require('./trace.js');
-let XAxis = require('./xaxis.js');
+const Interval = require('./interval.js');
+const MomentInterval = require('./momentinterval.js');
+const Trace = require('./trace.js');
+const XAxis = require('./xaxis.js');
 
 const TICK_LENGTH_IN_PX = 6;
 const TICK_PADDING_IN_PX = 3;
@@ -20,16 +22,10 @@ class Plot {
    * @param {Number} yTickLabelChars - The y-axis tick labels will have space
    * for at least this many '0' characters. See the yTicks function comment for
    * details on the formatting of these labels.
-   * @param {Object} interval - Specifies the initial time interval to display
-   * e.g. ```{
-   *   start: +(new Date("1/1/2015")),
-   *   end: +(new Date("1/1/2016"))
-   * };```
-   * @param {Number} interval.start - Unix time of the start of the interval in
-   * ms.
-   * @param {Number} interval.end - Unix time of the end of the interval in ms.
-   * @param {Object} maxInterval - An interval object, with the same structure
-   * as the interval parameter, that limits the panning/zooming of the plot.
+   * @param {MomentInterval} interval - Specifies the initial time interval to
+   * display.
+   * @param {MomentInterval} maxInterval - Specifies the maximum interval the
+   * plot can be set to.
    * @param {Object} options - Properties of options are optional parameters
    * @param {Number} options.minIntervalLength - The minimum interval length in
    * ms. Default is one hour.
@@ -51,14 +47,14 @@ class Plot {
     this._timeZone = timeZone;
     this._yLabel = yLabel;
     this._yTickLabelChars = yTickLabelChars;
-    this._interval = {
-      start: moment.tz(interval.start, timeZone),
-      end: moment.tz(interval.end, timeZone)
-    };
-    this._maxInterval = {
-      start: moment.tz(maxInterval.start, timeZone),
-      end: moment.tz(maxInterval.end, timeZone)
-    };
+    if (!(interval instanceof MomentInterval)) {
+      throw new Error('interval must be an instance of Interval');
+    }
+    this._interval = interval;
+    if (!(maxInterval instanceof MomentInterval)) {
+      throw new Error('maxInterval must be an instance of Interval');
+    }
+    this._maxInterval = maxInterval;
     this._options = options;
 
     this._traces = [];
@@ -341,8 +337,7 @@ class Plot {
       if (timespan.unit === 'max') {
         button.attr('value', 'max')
         .on('click', () => {
-          this.setIntervalAnimate(+this._maxInterval.start,
-                                  +this._maxInterval.end);
+          this.setIntervalAnimate(this._maxInterval);
           button.node().blur()
         })
       } else {
@@ -376,17 +371,15 @@ class Plot {
     // years have variable length in ms.
     const possibleStart = this._interval.end.clone().subtract(timespan)
     if (possibleStart.isSameOrAfter(this._maxInterval.start)) {
-      // we good
-      this.setIntervalAnimate(+possibleStart, +this._interval.end)
+      this.setIntervalAnimate(new Interval(possibleStart, this._interval.end));
       return;
     } else {
       const possibleEnd = this._maxInterval.start.clone().add(timespan)
       if (possibleEnd.isSameOrBefore(this._maxInterval.end)) {
-        // we good
-        this.setIntervalAnimate(+this._maxInterval.start, +possibleEnd)
+        this.setIntervalAnimate(new Interval(this._maxInterval.start,
+                                             possibleEnd));
       } else {
-        this.setIntervalAnimate(+this._maxInterval.start,
-                                +this._maxInterval.end)
+        this.setIntervalAnimate(this._maxInterval);
       }
     }
   }
@@ -421,7 +414,7 @@ class Plot {
     this._controlForm.start.classed('wxplot-input-error', false);
     this._controlForm.end.classed('wxplot-input-error', false);
     this._controlForm.errorMessage.text('');
-    this.setIntervalAnimate(start, end);      
+    this.setIntervalAnimate(new Interval(start, end));      
   }
 
   // Updates the plot's controls to reflect the plot's current interval
@@ -451,8 +444,7 @@ class Plot {
        * timespans. 
        */
       const maxTimespan = timespans[timespans.length - 1];
-      if (this._interval.start.isSame(this._maxInterval.start)
-        && this._interval.end.isSame(this._maxInterval.end)) {
+      if (this._interval.equals(this._maxInterval)) {
         setButtonColoring(maxTimespan, 'center');
         timespanColorsSet = true;
       } else {
@@ -464,7 +456,7 @@ class Plot {
           continue;
         }
         if (!timespanColorsSet) {
-          const diff = +this._interval.end - +this._interval.start;
+          const diff = this._interval.end - this._interval.start;
           if (0.95 * timespan.duration < diff
               && diff < 1.05 * timespan.duration) {
             setButtonColoring(timespan, 'center');
@@ -511,16 +503,22 @@ class Plot {
     updateTimespanControls.call(this);
   }
 
-  setIntervalAnimate(start, end) {
-    this.setInterval(start, end, true);
+  /**
+   * Sets the plot's interval with a 500 ms animation between the old and new
+   * intervals.
+   * @param {Interval|MomentInterval} interval
+   */
+  setIntervalAnimate(interval) {
+    this.setInterval(interval, true);
   }
 
   /**
    * Sets the plot's interval
-   * @param {Number} start - Unix time of the start of the interval in ms.
-   * @param {Number} end - Unix time of the end of the interval in ms.
+   * @param {Interval|MomentInterval} interval
    */
-  setInterval(start, end, animate=false) {
+  setInterval(interval, animate=false) {
+    let start = +interval.start;
+    let end = +interval.end;
     if (start < this._maxInterval.start) {
       start = this._maxInterval.start;
     }
@@ -688,10 +686,8 @@ class Plot {
 
     // The latest visible time.
     const end = this._xScale.invert(this._traceBox.width); 
-    this._interval = {
-      start: moment.tz(start, this._timeZone),
-      end: moment.tz(end, this._timeZone)
-    };
+    this._interval = new MomentInterval(moment.tz(start, this._timeZone), 
+                                        moment.tz(end, this._timeZone));
     this._updateControls();
     this._setTraceIntervals();
     this._render();
@@ -703,9 +699,7 @@ class Plot {
     // plot exactly once when all data has loaded.
     let loadedPromises = [];
     for (const trace of this._traces) {
-        trace.setInterval({
-          start: +this._interval.start,
-          end: +this._interval.end});
+        trace.setInterval(this._interval);
         // Don't create a promise for the loading of a DataBlock if we already
         // created one in a previous zoomed call (which happens because
         // multiple plot intervals may map to the same DataBlock), as indicated
@@ -732,7 +726,7 @@ class Plot {
     // Clear the brush selection
     this._brushBox.call(this._brush.move, null);
     const interval = selection.map(this._xScale.invert, this._xScale);
-    this.setIntervalAnimate(interval[0], interval[1]);
+    this.setIntervalAnimate(new Interval(...interval));
   }
 
   /*
@@ -892,4 +886,5 @@ class Plot {
   }
 }
 
+// jsdoc doesn't work when the export is at the declaration.
 module.exports = Plot;
