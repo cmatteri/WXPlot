@@ -371,13 +371,14 @@ class Plot {
     // years have variable length in ms.
     const possibleStart = this._interval.end.clone().subtract(timespan)
     if (possibleStart.isSameOrAfter(this._maxInterval.start)) {
-      this.setIntervalAnimate(new Interval(possibleStart, this._interval.end));
+      this.setIntervalAnimate(new Interval(+possibleStart,
+                                           +this._interval.end));
       return;
     } else {
       const possibleEnd = this._maxInterval.start.clone().add(timespan)
       if (possibleEnd.isSameOrBefore(this._maxInterval.end)) {
-        this.setIntervalAnimate(new Interval(this._maxInterval.start,
-                                             possibleEnd));
+        this.setIntervalAnimate(new Interval(+this._maxInterval.start,
+                                             +possibleEnd));
       } else {
         this.setIntervalAnimate(this._maxInterval);
       }
