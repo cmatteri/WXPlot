@@ -55,6 +55,7 @@ class Plot {
       throw new Error('maxInterval must be an instance of Interval');
     }
     this._maxInterval = maxInterval;
+
     this._options = options;
 
     this._traces = [];
@@ -190,15 +191,16 @@ class Plot {
   }
 
   _initializeZoom() {
-    const minScale = (this._interval.end - this._interval.start) 
+    const origInterval = this._origXScale.domain();
+    const minScale = (origInterval[1] - origInterval[0]) 
       / (this._maxInterval.end - this._maxInterval.start);
-    const maxScale = (this._interval.end - this._interval.start)
+    const maxScale = (origInterval[1] - origInterval[0])
       / this._minIntervalLength;
     this._zoom = d3.zoom()
         .extent([[0, 0], [this._traceBox.width, this._traceBox.height]])
         .scaleExtent([minScale, maxScale])
         .translateExtent([[this._origXScale(this._maxInterval.start), 0],
-          [this._origXScale(this._maxInterval.end), this._canvasHeight]])
+          [this._origXScale(this._maxInterval.end), this._traceBox.height]])
         .on('zoom', this._zoomed.bind(this));
     this._zoomBox = this._canvasRoot.append('div')
       .attr('id', 'wxplot-zoom')
@@ -546,6 +548,28 @@ class Plot {
       : this._zoomBox;
     selection.call(this._zoom.transform,
                    d3.zoomIdentity.scale(scaleFactor).translate(xShift, 0));
+  }
+
+  /**
+   * Sets the plot's maximum interval
+   * @param {Interval|MomentInterval} interval
+   */
+  setMaxInterval(interval) {
+    this._maxInterval = interval;
+    this._zoomBox.remove();
+    this._initializeZoom();
+    this.setInterval(this._interval);
+  }
+
+  /**
+   * Sets the plot's minimum interval length
+   * @param {Interval|MomentInterval} interval
+   */
+  setMinIntervalLength(length) {
+    this._minIntervalLength = length;
+    this._zoomBox.remove();
+    this._initializeZoom();
+    this.setInterval(this._interval);
   }
 
   /**

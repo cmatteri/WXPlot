@@ -73,6 +73,8 @@ A weather data plot.
     * [new Plot(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars, interval, maxInterval, options)](#new_Plot_new)
     * [.setIntervalAnimate(interval)](#Plot+setIntervalAnimate)
     * [.setInterval(interval)](#Plot+setInterval)
+    * [.setMaxInterval(interval)](#Plot+setMaxInterval)
+    * [.setMinIntervalLength(interval)](#Plot+setMinIntervalLength)
     * [.setYLabel(label)](#Plot+setYLabel) ⇒ <code>[Plot](#Plot)</code>
     * [.addTrace(dataParams, legendText, color, dash, width, options)](#Plot+addTrace) ⇒ <code>[Plot](#Plot)</code>
     * [.loadTracesAndRedraw()](#Plot+loadTracesAndRedraw) ⇒ <code>[Plot](#Plot)</code>
@@ -90,8 +92,8 @@ A weather data plot.
 | timeZone | <code>String</code> | Time zone identifier corresponding to the time zone of the weather station, e.g. 'America/Los_Angeles' |
 | yLabel | <code>String</code> | Label for the vertical axis |
 | yTickLabelChars | <code>Number</code> | The y-axis tick labels will have space for at least this many '0' characters. See the yTicks function comment for details on the formatting of these labels. |
-| interval | <code>MomentInterval</code> | Specifies the initial time interval to display |
-| maxInterval | <code>MomentInterval</code> | Specifies the maximum interval the plot can be set to |
+| interval | <code>MomentInterval</code> | Specifies the initial time interval to display. |
+| maxInterval | <code>MomentInterval</code> | Specifies the maximum interval the plot can be set to. |
 | options | <code>Object</code> | Properties of options are optional parameters |
 | options.minIntervalLength | <code>Number</code> | The minimum interval length in ms. Default is one hour. |
 | options.smooth | <code>Boolean</code> | Set to false to not draw smooth traces (by default, WXPlot uses monotone cubic interpolation to produce smooth lines that pass through all data points and do not introduce minima or maxima between points). |
@@ -114,6 +116,28 @@ intervals.
 
 ### plot.setInterval(interval)
 Sets the plot's interval
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+
+| Param | Type |
+| --- | --- |
+| interval | <code>Interval</code> &#124; <code>MomentInterval</code> | 
+
+<a name="Plot+setMaxInterval"></a>
+
+### plot.setMaxInterval(interval)
+Sets the plot's maximum interval
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
+
+| Param | Type |
+| --- | --- |
+| interval | <code>Interval</code> &#124; <code>MomentInterval</code> | 
+
+<a name="Plot+setMinIntervalLength"></a>
+
+### plot.setMinIntervalLength(interval)
+Sets the plot's minimum interval length
 
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
 
@@ -175,7 +199,7 @@ loaded.
 Removes all traces from the plot.
 
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
-**Returns**: <code>[Plot](#Plot)</code> - the object removeTrace was called on.  
+**Returns**: <code>[Plot](#Plot)</code> - the object removeTrace was called on.
 
 <a name="MomentInterval"></a>
 
