@@ -61,7 +61,7 @@ const plots = {
     }],
     unit: '°'
   },
-    radiation: {
+  radiation: {
     traces: [{
       displayName: 'Solar Radiation',
       name: 'radiation'
@@ -141,8 +141,8 @@ const options = {
   timeSpanControlRoot: d3.select("#plot-hideable-controls")
 };
 
-const plot = new WXPlot(d3.select("#plot-controls"),
-  d3.select("#plot-canvas-inner"), "America/Los_Angeles", "Temperature (F)", 5,
-  interval, maxInterval, options);
+const plot = new WXPlot(
+  d3.select("#plot-controls"), d3.select("#plot-canvas-inner"),
+  "America/Los_Angeles", "Temperature (F)", 5, interval, maxInterval, options);
 
 updateTraces(plotKey, showMinMax);
