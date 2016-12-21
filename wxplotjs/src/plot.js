@@ -417,7 +417,7 @@ class Plot {
     this._controlForm.start.classed('wxplot-input-error', false);
     this._controlForm.end.classed('wxplot-input-error', false);
     this._controlForm.errorMessage.text('');
-    this.setIntervalAnimate(new Interval(start, end));      
+    this.setIntervalAnimate(new MomentInterval(start, end));      
   }
 
   // Updates the plot's controls to reflect the plot's current interval
