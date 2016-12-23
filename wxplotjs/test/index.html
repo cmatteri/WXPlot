@@ -4,29 +4,29 @@
 <html>
   <head>
     <title>WxPlot Test</title>
-    <link rel="stylesheet" type="text/css" href="wxplot.css" />
-    <link rel="stylesheet" type="text/css" href="wxplot-test.css" />
+    <link rel="stylesheet" type="text/css" href="plot.css" />
+    <link rel="stylesheet" type="text/css" href="app.css" />
   </head>
   
   <body>
-    <div id="plot" class="portrait">
+    <div id="app-container">
       <div id="top">
-        <div id="plot-controls" class="overflow-scroll">
+        <div id="controls" class="overflow-scroll">
           <div>
-            <button id="plot-hide-controls">Settings ▾</button>
+            <button id="hide-controls">Settings ▾</button>
           </div>
-          <div id="plot-hideable-controls-positioner"> 
-            <div id="plot-hideable-controls" class="hide-controls">
-              <div id="plot-trace-select"></div>
+          <div id="hideable-controls-positioner"> 
+            <div id="hideable-controls" class="hide-controls">
+              <div id="trace-select"></div>
             </div>
           </div>
         </div>
-        <div id="plot-canvas-outer">
-          <div id="plot-canvas-inner"></div>
+        <div id="canvas-outer">
+          <div id="canvas-inner"></div>
         </div>
       </div>
       <div id="bottom">
-        <div id="plot-legend"></div>
+        <div id="legend"></div>
       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>

@@ -41,9 +41,9 @@ class Plot {
   constructor(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars,
       interval, maxInterval, options = {}) {
     this._controls = controlRoot.append('div')
-        .attr('id', 'wxplot-controls');
+        .attr('id', 'plot-controls');
     this._canvasRoot = canvasRoot.append('div')
-        .attr('id', 'wxplot-canvas-box');
+        .attr('id', 'plot-canvas-box');
     this._timeZone = timeZone;
     this._yLabel = yLabel;
     this._yTickLabelChars = yTickLabelChars;
@@ -78,7 +78,7 @@ class Plot {
       legendRoot = controlRoot;
     }
     legendRoot.append('div')
-        .attr('id', 'wxplot-legend');
+        .attr('id', 'plot-legend');
 
     this._updateControls();
 
@@ -130,11 +130,11 @@ class Plot {
   // Removes plot elements created by _initializePlot, so the plot may be
   // reinitialized.
   _destroyPlot() {
-    document.getElementById('wxplot-canvas-box').removeChild(
-      document.getElementById('wxplot-canvas'));
+    document.getElementById('plot-canvas-box').removeChild(
+      document.getElementById('plot-canvas'));
     this._zoomBox.remove();
     this._brushBox.remove();
-    d3.select('#wxplot-brush-indicator').remove();
+    d3.select('#plot-brush-indicator').remove();
   }
 
   // Initialize plot elements
@@ -156,7 +156,7 @@ class Plot {
 
     const canvas = document.createElement('canvas');
     this._canvasRoot.node().appendChild(canvas);
-    canvas.id = 'wxplot-canvas';
+    canvas.id = 'plot-canvas';
     // To produce a crisp image, the dimensions of the canvas buffer should
     // equal the dimensions in physical pixels of the rendered canvas on the
     // screen of the user's device. To accomplish this the canvas buffer is set
@@ -203,7 +203,7 @@ class Plot {
           [this._origXScale(this._maxInterval.end), this._traceBox.height]])
         .on('zoom', this._zoomed.bind(this));
     this._zoomBox = this._canvasRoot.append('div')
-      .attr('id', 'wxplot-zoom')
+      .attr('id', 'plot-zoom')
       .style('width', this._traceBox.width + 'px')
       .style('height', this._traceBox.height + 'px')
       .style('margin-top', this._traceBox.y + 'px')
@@ -231,14 +231,14 @@ class Plot {
     this._brushBox = this._canvasRoot.append('svg')
         .attr('width', this._traceBox.width)
         .attr('height', this._xAxisHeight)
-        .attr('id', 'wxplot-brush')
+        .attr('id', 'plot-brush')
         .style('margin-left', this._traceBox.x + 'px')
         .call(this._brush);
 
     this._brushIndicatorRect = this._canvasRoot.append('svg')
         .attr('width', this._traceBox.width)
         .attr('height', this._traceBox.height)
-        .attr('id', 'wxplot-brush-indicator')
+        .attr('id', 'plot-brush-indicator')
         .style('margin-top', this._traceBox.y + 'px')
         .style('margin-left', this._traceBox.x + 'px')
         .append('rect')
@@ -250,7 +250,7 @@ class Plot {
   _initializeControls() {
     // Add inputs to set/display the plot's start and end date
     const startControl = this._controls.append('div')
-        .classed('wxplot-interval-control', true);
+        .classed('plot-interval-control', true);
     startControl.append('label')
         .text('Start:');
     const start = startControl.append('input')
@@ -263,7 +263,7 @@ class Plot {
         });
 
     const endControl = this._controls.append('div')
-        .classed('wxplot-interval-control', true);
+        .classed('plot-interval-control', true);
     endControl.append('label')
         .text('End:');
     const end = endControl.append('input')
@@ -276,17 +276,17 @@ class Plot {
         });
 
     const errorMessage = this._controls.append('label')
-      .classed('wxplot-error-message', true);
+      .classed('plot-error-message', true);
 
     this._controls.append('button')
-      .attr('id', 'wxplot-help-button')
+      .attr('id', 'plot-help-button')
       .text('?')
       .on('click', () => {
         document
-          .getElementById('wxplot-help-box')
-            .classList.toggle('wxplot-hide');
-        const button = document.getElementById('wxplot-help-button');
-        button.classList.toggle('wxplot-pressed');
+          .getElementById('plot-help-box')
+            .classList.toggle('plot-hide');
+        const button = document.getElementById('plot-help-button');
+        button.classList.toggle('plot-pressed');
         button.blur();
       })
 
@@ -294,18 +294,18 @@ class Plot {
     // div because the controls div can get small on mobile, and the canvas div
     // is (probably) more centrally positioned.
     const helpDiv = this._canvasRoot.append('div')
-      .attr('id', 'wxplot-help-box')
-      .classed('wxplot-hide', true)
+      .attr('id', 'plot-help-box')
+      .classed('plot-hide', true)
     helpDiv.append('button')
-      .attr('id', 'wxplot-help-close-button')
+      .attr('id', 'plot-help-close-button')
       .text('x')
       .on('click', () => {
         document
-          .getElementById('wxplot-help-box')
-            .classList.add('wxplot-hide');
+          .getElementById('plot-help-box')
+            .classList.add('plot-hide');
         document
-          .getElementById('wxplot-help-button')
-            .classList.remove('wxplot-pressed');
+          .getElementById('plot-help-button')
+            .classList.remove('plot-pressed');
       })
     helpDiv
       .append('span')
@@ -316,7 +316,7 @@ class Plot {
 
     // Add a row of buttons to control the timespan
     const timespanForm = this._timeSpanControlRoot.append('form')
-    timespanForm.attr('id', 'wxplot-timespan-control-form')
+    timespanForm.attr('id', 'plot-timespan-control-form')
 
     const timespans = [
       {value: 1, unit:'d'},
@@ -400,22 +400,22 @@ class Plot {
       'MM-DD-YYYY', this._timeZone);
 
     if (!start.isValid() || !end.isValid()) {
-      this._controlForm.start.classed('wxplot-input-error', !start.isValid());
-      this._controlForm.end.classed('wxplot-input-error', !end.isValid());
+      this._controlForm.start.classed('plot-input-error', !start.isValid());
+      this._controlForm.end.classed('plot-input-error', !end.isValid());
       this._controlForm.errorMessage.text(
         'Invalid Date (must have format MM/DD/YYYY)');
       return;
     }
 
     if (start >= end) {
-      this._controlForm.start.classed('wxplot-input-error', true);
-      this._controlForm.end.classed('wxplot-input-error', true);
+      this._controlForm.start.classed('plot-input-error', true);
+      this._controlForm.end.classed('plot-input-error', true);
       this._controlForm.errorMessage.text('Start must be before end.');
       return;
     }
 
-    this._controlForm.start.classed('wxplot-input-error', false);
-    this._controlForm.end.classed('wxplot-input-error', false);
+    this._controlForm.start.classed('plot-input-error', false);
+    this._controlForm.end.classed('plot-input-error', false);
     this._controlForm.errorMessage.text('');
     this.setIntervalAnimate(new MomentInterval(start, end));      
   }
@@ -495,8 +495,8 @@ class Plot {
      * controls to reflect the plot's current interval.  
      */
     if (this._controlForm.errorMessage.text()) {
-      this._controlForm.start.classed('wxplot-input-error', false);
-      this._controlForm.end.classed('wxplot-input-error', false);
+      this._controlForm.start.classed('plot-input-error', false);
+      this._controlForm.end.classed('plot-input-error', false);
       this._controlForm.errorMessage.text('')
     }
     this._controlForm.start.property('value',
@@ -615,7 +615,7 @@ class Plot {
       this._traceBox, color, dash, width, options));
 
     const legendText = name;
-    const legend = document.getElementById('wxplot-legend');
+    const legend = document.getElementById('plot-legend');
     const groups = legend.children;
     let groupTraces;
     for (let i = 0; i < groups.length; i++) {
@@ -628,7 +628,7 @@ class Plot {
     if (!groupTraces) {
       const groupNode = document.createElement('div');
       legend.appendChild(groupNode);
-      groupNode.classList.add('wxplot-legend-group')
+      groupNode.classList.add('plot-legend-group')
       const label = document.createElement('span');
       groupNode.appendChild(label);
       label.innerText = group;
@@ -640,7 +640,7 @@ class Plot {
     // trace.
     const legendNode = document.createElement('div');
     groupTraces.appendChild(legendNode);
-    legendNode.classList.add('wxplot-legend-trace');
+    legendNode.classList.add('plot-legend-trace');
     const LEGEND_LINE_LEN = 20;
     const canvas = document.createElement('canvas');
     legendNode.appendChild(canvas);
@@ -687,11 +687,11 @@ class Plot {
    */
   removeTraces() {
     this._traces = [];
-    let legend = document.getElementById('wxplot-legend');
+    let legend = document.getElementById('plot-legend');
     const legendRoot = legend.parentNode;
     legendRoot.removeChild(legend);
     legend = document.createElement('div');
-    legend.id = 'wxplot-legend';
+    legend.id = 'plot-legend';
     legendRoot.appendChild(legend);
     return this;
   }

@@ -14,7 +14,7 @@ button {
     -webkit-appearance: none;
 }
 
-#plot {
+#app-container {
     position: fixed;
     top: 0;
     bottom: 0;
@@ -25,25 +25,25 @@ button {
 }
 
 @media (min-width: 700px) {
-     #plot {
+     #app-container {
         width: 700px;
      }
 }
 
 @media (min-height: 500px) {
-    #plot {
+    #app-container {
         height: 500px;
     }
 }
 
-#plot-canvas-outer {
+#canvas-outer {
     position: relative;
     margin: 5px;
     min-height: 150px;
     flex: 1;
 }
 
-#plot-canvas-inner {
+#canvas-inner {
     /* 
      * Position absolute is necessary to make the canvas to fill the available
      * space on iOS.
@@ -52,7 +52,7 @@ button {
     width: 100%;
     height: 100%;
 
-    /* Make the canvas container match the dimensions of plot-canvas-inner */
+    /* Make the canvas container match the dimensions of canvas-inner */
     & > * {
         width: 100%;
         height: 100%;
@@ -70,7 +70,7 @@ button {
         flex-flow: row;
     }
 
-    #plot-controls {
+    #controls {
         /* 
          * A fixed percentage is better than min-content here because it keeps
          * the plot from getting too wide. Either way, the plot needs to be
@@ -79,20 +79,20 @@ button {
         width: 33%;
     }
 
-    #plot-canvas-outer {
+    #canvas-outer {
         width: 67%;
     }
 }
 
-#plot-hide-controls {
+#hide-controls {
     display: none;
 }
 
-#plot-hideable-controls-positioner {
+#hideable-controls-positioner {
     position: relative;
 }
 
-#plot-hideable-controls {
+#hideable-controls {
     &, & select {
         font: 1rem sans-serif;
         margin: 2px;
@@ -105,7 +105,7 @@ button {
 }
 
 @media (max-height: 500px) and (orientation: portrait), (max-height: 275px) {
-    #plot-hide-controls {
+    #hide-controls {
         display: block;
 
         &.pressed {
@@ -113,7 +113,7 @@ button {
         }
     }
 
-    #plot-hideable-controls {
+    #hideable-controls {
         position: absolute;
         background-color: white;
         border: 1px solid black;

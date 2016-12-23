@@ -1,8 +1,8 @@
-.wxplot-input-error {
+.plot-input-error {
 	border-color: red;
 }
 
-.wxplot-interval-control {
+.plot-interval-control {
 	margin: 2px;
 
 	label {
@@ -15,31 +15,31 @@
 	}
 }
 
-div.wxplot-interval-control {
+div.plot-interval-control {
 	display: inline-block;
 }
 
-.wxplot-error-message {
+.plot-error-message {
 	color: red;
 }
 
-.wxplot-hide {
+.plot-hide {
 	display: none;
 }
 
-.wxplot-pressed {
+.plot-pressed {
     background-color: #e6e6e6;
 }
 
-#wxplot-help-button {
+#plot-help-button {
 	float: right;
 }
 
-#wxplot-help-box, .wxplot-legend-group, #wxplot-trace-box {
+#plot-help-box, .plot-legend-group, #plot-trace-box {
 	background-color: white;
 }
 
-#wxplot-help-box {
+#plot-help-box {
 	position: absolute;
 	margin: 5px;
 	border: 1px solid black;
@@ -47,11 +47,11 @@ div.wxplot-interval-control {
 	z-index: 100;
 }
 
-#wxplot-help-close-button {
+#plot-help-close-button {
 	float: right;
 }
 
-.wxplot-legend-group {
+.plot-legend-group {
 	display: inline-block;
 	padding: 2px;
 	margin: 2px;
@@ -62,7 +62,7 @@ div.wxplot-interval-control {
 	}
 }
 
-.wxplot-legend-trace {
+.plot-legend-trace {
 	display: inline-block;
 	margin: 2px;
 	padding: 2px;
@@ -74,7 +74,7 @@ div.wxplot-interval-control {
 	}
 }
 
-#wxplot-timespan-control-form {
+#plot-timespan-control-form {
 	margin: 2px;
 
 	input {
@@ -123,33 +123,33 @@ div.wxplot-interval-control {
 	}
 }
 
-#wxplot-legend, #wxplot-controls, #wxplot-canvas-box,
-#wxplot-controls input, #wxplot-timespan-control-form input {
+#plot-legend, #plot-controls, #plot-canvas-box,
+#plot-controls input, #plot-timespan-control-form input {
 	font: 1rem sans-serif;
 }
 
-#wxplot-canvas {
+#plot-canvas {
 	width: 100%;
 	height: 100%;
 }
 
-#wxplot-canvas-box {
+#plot-canvas-box {
 	width: 700px;
 	height: 400px;
 	position: relative;
 }
 
-#wxplot-zoom, #wxplot-brush-indicator, #wxplot-brush {
+#plot-zoom, #plot-brush-indicator, #plot-brush {
 	position: absolute;
 	left: 0;
 }
 
-#wxplot-zoom {
+#plot-zoom {
 	top: 0;
 	z-index: 1;
 }
 
-#wxplot-brush-indicator {
+#plot-brush-indicator {
 	top: 0;
 	pointer-events: none;
 
@@ -159,7 +159,7 @@ div.wxplot-interval-control {
     }
 }
 
-#wxplot-brush {
+#plot-brush {
 	bottom: 0;
 	background-color: rgba(105, 75, 225, 0.22);
 
