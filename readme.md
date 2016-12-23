@@ -10,55 +10,7 @@ Due to the poor support for timezones and local time in Javascript, WXPlot uses 
 Live demo [here](http://matterivineyards.com/wxplot).
 
 #Installation
-##WXPlotJS
-WXPlotJS has the following dependencies:
-
-[D3.js (v4)](https://d3js.org/)
-
-[Moment.js](http://momentjs.com/)
-
-[Moment Timezone](http://momentjs.com/timezone/) (with relevant data)
-
-```
-cd wxplotjs
-npm install
-npm build
-```
-
-To use WXPlotJS, simply source css/wxplot.css and bin/wxplot.min.js and put ```WXPlot = require('wxplot')``` in your script. View wxplotjs/test/release/index.html for an example which sources all the necessary files, instantiates a plot and adds a few traces.
-
-###Development
-A script is included that uses watchify to automatically perform incremental rebuilds whenever one of the source files changes. To use it run ```npm watch``` from the wxplotjs directory. The script produces builds with source maps for easy debugging.
-
-A simple node app is also included that functions as a dev server. To use it run ```node app.js``` in the wxplotjs directory. Then navigate to [http://localhost:3000/dev](). WXPlotFlask must be running for data to load. The dev server also allows release builds to be tested at [http://localhost:3000/release]().
-
-WXPlotJS should work in all modern browsers.
-
-WXPlotJS works with browserify. Copy the wxplotjs folder to the node_modules directory in your project and ```require('wxplotjs')```. Browserify will automatically apply the babelify transform to wxplotjs (due to a key in wxplotjs's package.json).
-
-##WXPlotFlask
-Install [weewx](http://weewx.com/).
-
-The weewx database manager class must be slightly modified to work with WXPlotFlask, since WXPlot needs aggregate intervals to be back-to-back in unix time, as opposed to having constant local time boundaries, which is the default in weewx. The included wxplotmanager extension adds an option to _getSqlVectors to allow back-to-back intervals. If the option is not supplied, the behavior is the same as the default manager class. Thus this extension should not affect the behavior of weewx.
-
-WXPlotFlask does not need to use the same weewx installation that is used for archiving data. I plan to run it on a separate server, using mysql replication to get the data from the weather station.
-
-Install wxplotmanager (more information in wxplotflask/wxplotmanager/readme.txt).
-```
-wee_extension --install=wxplotmanager-0.1.tar.gz
-```
-
-Install [flask](http://flask.pocoo.org/).
-
-Modify the paths for the weewx bin directory and weewx.conf file in wxplotflask/run.sh.
-
-Start a dev server with:
-
-```
-wxplotflask/run.sh
-```
-
-or deploy as a flask app.
+Instructions coming soon. If you would like to use WXPlot now please send me an email.
 
 #API Reference
 
