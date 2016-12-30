@@ -783,6 +783,15 @@ class Plot {
      * labels if the extent of y values is a single point.
      */
     if (newYDomain[0] != newYDomain[1]) {
+      // Traces have a nonzero thickness, so they should not reach the very top
+      // or bottom of the trace box, or they would be clipped. To prevent
+      // clipping, the y extent is expanded by 10 px on either end. The formula
+      // used here is simplified, but will expand the extent as described.
+      const EXPAND_EXTENT_PX = 10;
+      const diff = newYDomain[1] - newYDomain[0];
+      const extra = diff * EXPAND_EXTENT_PX / this._traceBox.height;
+      newYDomain[0] -= extra;
+      newYDomain[1] += extra;
       this._yScale.domain(newYDomain);
     }
   }
