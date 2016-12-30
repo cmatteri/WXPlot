@@ -13,8 +13,6 @@ document.getElementById('hide-controls').addEventListener('click',
 
 const timeZone = "America/Los_Angeles";
 
-const interval = new MomentInterval(moment.tz(new Date("1/1/2015"), timeZone),
-                              moment.tz(Date.now(), timeZone));
 const maxInterval = new MomentInterval(moment.tz(new Date("1/1/2015"),
                                                  timeZone),
                                        moment.tz(Date.now(), timeZone));
@@ -26,6 +24,7 @@ const options = {
 
 const plot = new Plot(
   d3.select("#controls"), d3.select("#canvas-inner"),
-  "America/Los_Angeles", "Temperature (F)", 5, interval, maxInterval, options);
+  "America/Los_Angeles", "Temperature (F)", 5, maxInterval, maxInterval,
+  options);
 
 new TraceSelect(document.getElementById('trace-select'), plot);
