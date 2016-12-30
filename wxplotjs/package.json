@@ -22,7 +22,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "mkdir -p bin; browserify -r ./src/plot.js:wxplot -t babelify | uglifyjs > bin/wxplot.min.js",
+    "build": "mkdir -p bin; browserify ./src/app.js -t babelify | uglifyjs > bin/wxplot.min.js",
     "watch": "mkdir -p bin; watchify -v -d ./src/app.js -t babelify -o bin/wxplot.js"
   },
   "author": "Chris Matteri",
