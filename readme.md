@@ -25,6 +25,7 @@ A weather data plot.
     * [new Plot(controlRoot, canvasRoot, timeZone, yLabel, yTickLabelChars, interval, maxInterval, options)](#new_Plot_new)
     * [.setIntervalAnimate(interval)](#Plot+setIntervalAnimate)
     * [.setInterval(interval)](#Plot+setInterval)
+    * [.getInterval()](#Plot+getInterval) ⇒ <code>MomentInterval</code>
     * [.setMaxInterval(interval)](#Plot+setMaxInterval)
     * [.setMinIntervalLength(interval)](#Plot+setMinIntervalLength)
     * [.setYLabel(label)](#Plot+setYLabel) ⇒ <code>[Plot](#Plot)</code>
@@ -75,6 +76,12 @@ Sets the plot's interval
 | --- | --- |
 | interval | <code>Interval</code> &#124; <code>MomentInterval</code> | 
 
+<a name="Plot+getInterval"></a>
+
+### plot.getInterval() ⇒ <code>MomentInterval</code>
+Gets the plot's interval
+
+**Kind**: instance method of <code>[Plot](#Plot)</code>  
 <a name="Plot+setMaxInterval"></a>
 
 ### plot.setMaxInterval(interval)
@@ -152,7 +159,6 @@ Removes all traces from the plot.
 
 **Kind**: instance method of <code>[Plot](#Plot)</code>  
 **Returns**: <code>[Plot](#Plot)</code> - the object removeTrace was called on.
-
 <a name="MomentInterval"></a>
 
 ## MomentInterval

@@ -551,6 +551,14 @@ class Plot {
   }
 
   /**
+   * Gets the plot's interval
+   * @returns {MomentInterval}
+   */
+  getInterval() {
+    return this._interval;
+  }
+
+  /**
    * Sets the plot's maximum interval
    * @param {Interval|MomentInterval} interval
    */
