@@ -33,7 +33,7 @@ def iso8601_to_unix_time(date):
     delta = dt - datetime.datetime(1970, 1, 1, tzinfo=dateutil.tz.tzutc())
     return delta.total_seconds()
 
-@app.route('/<data_binding>/<wx_observation>')
+@app.route('/weewx/<data_binding>/<wx_observation>')
 def hello_world(data_binding, wx_observation):
     start = iso8601_to_unix_time(request.args.get('start'))
     end = iso8601_to_unix_time(request.args.get('end'))

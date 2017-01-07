@@ -1,3 +1,5 @@
+const moment = window.moment;
+
 // An interval of time, with start and end represented by Moment.js moments
 class MomentInterval {
   /**

@@ -1,3 +1,4 @@
+const d3 = window.d3;
 const Interval = require('./interval.js');
 
 // Gets data for a trace. Data is loaded from the server in small segments to

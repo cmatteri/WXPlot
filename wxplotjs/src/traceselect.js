@@ -1,5 +1,3 @@
-const MomentInterval = require('./momentinterval.js');
-
 // The possible sets of traces to display on the plot
 const traceSets = [
   {

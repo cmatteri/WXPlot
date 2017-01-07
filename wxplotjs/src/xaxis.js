@@ -1,3 +1,5 @@
+const moment = window.moment;
+
 // Calculates where to put x-axis ticks based on text size and level of
 // zoom. Draws x-axis ticks and labels, and vertical gridlines.
 module.exports = class XAxis {

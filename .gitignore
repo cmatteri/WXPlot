@@ -1,3 +1,6 @@
 .DS_Store
 *.sublime-project
 *.sublime-workspace
+wxplotjs/public/*.js
+wxplotjs/public/*.css
+wxplotjs/public/*.css.map

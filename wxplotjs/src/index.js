@@ -1,6 +1,16 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+ReactDOM.render(
+  <div></div>,
+  document.getElementById('react')
+);
+
 const MomentInterval = require('./momentinterval.js');
 const Plot = require('./plot.js');
 const TraceSelect = require('./traceselect.js');
+const d3 = window.d3;
+const moment = window.moment;
 
 document.getElementById('hide-controls').addEventListener('click',
   () => {

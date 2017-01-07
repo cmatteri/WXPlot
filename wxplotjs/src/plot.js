@@ -1,3 +1,5 @@
+const d3 = window.d3;
+const moment = window.moment;
 const Interval = require('./interval.js');
 const MomentInterval = require('./momentinterval.js');
 const Trace = require('./trace.js');
