@@ -50,6 +50,7 @@ main() {
     PYTHONPATH="$weewx_bin" wxplotflask/main.py "$weewx_conf" &
     cd wxplotjs
     sass --watch scss:public &
+    npm start
 
     # Exit if any of the background jobs return
     wait -n $(jobs -p)

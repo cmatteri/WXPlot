@@ -19,8 +19,4 @@ cd WXPlot
 weewx_bin="/home/chris/git/weewx-3.5.0/bin/"
 weewx_conf="/home/chris/git/weewx-3.5.0/weewx.conf"
 ./run.sh "$weewx_bin" "$weewx_conf"
-
-# In a new tab (assumes we're starting in the WXPlot directory):
-cd wxplotjs
-npm start
 ```
