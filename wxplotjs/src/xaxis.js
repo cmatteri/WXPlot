@@ -164,7 +164,7 @@ module.exports = class XAxis {
       ticks.push(+tick);
       if (tickOpts.period.unit === 'h' && tickOpts.period.value > 1) {
         var hours = tick.hours();
-        hours = hours + tickOpts.period.value;
+        hours += tickOpts.period.value;
         if (hours >= 24) tick.add(1, 'd');
         tick.hours(hours % 24);
       } else {

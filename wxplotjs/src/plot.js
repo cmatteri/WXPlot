@@ -62,7 +62,6 @@ class Plot {
 
     this._traces = [];
 
-    let timeSpanControlRoot;
     if ('timeSpanControlRoot' in this._options) {
       this._timeSpanControlRoot = this._options.timeSpanControlRoot;
     } else {
@@ -84,7 +83,6 @@ class Plot {
 
     this._updateControls();
 
-    let minIntervalLength;
     if ('minIntervalLength' in this._options) {
       this._minIntervalLength = this._options.minIntervalLength;
     } else {
@@ -311,9 +309,9 @@ class Plot {
       })
     helpDiv
       .append('span')
-        .html('Use the mouse or touch to pan/zoom.<br>\
-              Drag in the violet box below the x-axis to zoom to a certain \
-              region.');
+        .html('Use the mouse or touch to pan/zoom.<br> '
+          + 'Drag in the violet box below the x-axis to zoom to a certain '
+          + 'region.');
   
 
     // Add a row of buttons to control the timespan
@@ -792,7 +790,7 @@ class Plot {
      * beginning and end. The following check ensures the y-axis will have
      * labels if the extent of y values is a single point.
      */
-    if (newYDomain[0] != newYDomain[1]) {
+    if (newYDomain[0] !== newYDomain[1]) {
       // Traces have a nonzero thickness, so they should not reach the very top
       // or bottom of the trace box, or they would be clipped. To prevent
       // clipping, the y extent is expanded by 10 px on either end. The formula
