@@ -28,7 +28,7 @@ const maxInterval = new MomentInterval(moment.tz(new Date("1/1/2015"),
                                        moment.tz(Date.now(), timeZone));
 
 const options = {
-  legendRoot: d3.select("#legend"),
+  legendContainer: d3.select("#legend"),
   timeSpanControlRoot: d3.select("#hideable-controls")
 };
 

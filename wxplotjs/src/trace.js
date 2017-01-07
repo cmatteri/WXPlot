@@ -7,14 +7,15 @@ module.exports = class Trace {
   // generator, both of which are used by the trace to draw itself.
   // See addTrace in plot.js for a description of the other parameters.
   constructor(name, group, dataParams, lineGenerator, traceBox, color, dash,
-      width, options = {}) {
+      thickness, options = {}) {
     this._name = name;
+    this._group = group;
     this._dataParams = dataParams;
     this._lineGenerator = lineGenerator;
     this._traceBox = traceBox;
     this._color = color;
     this._dash = dash;
-    this._width = width;
+    this._thickness = thickness;
     this._dataFetcher = new DataFectcher(dataParams);
     this._interval = null;
     this._data = null;
@@ -27,6 +28,18 @@ module.exports = class Trace {
 
   group() {
     return this._group;
+  }
+
+  color() {
+    return this._color;
+  }
+
+  dash() {
+    return this._dash;
+  }
+
+  thickness() {
+    return this._thickness;
   }
 
   // Returns the extent (the minimum and maximum values in an Array of length
@@ -129,7 +142,7 @@ module.exports = class Trace {
     context.clip();
     context.beginPath();
     this._lineGenerator(this._data);
-    context.lineWidth = this._width;
+    context.lineWidth = this._thickness;
     context.setLineDash(this._dash);
     context.strokeStyle = this._color;
     context.stroke();

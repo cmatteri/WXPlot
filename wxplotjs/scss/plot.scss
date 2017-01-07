@@ -35,7 +35,7 @@ div.plot-interval-control {
 	float: right;
 }
 
-#plot-help-box, .plot-legend-group, #plot-trace-box {
+#plot-help-box, .LegendGroup, #plot-trace-box {
 	background-color: white;
 }
 
@@ -49,29 +49,6 @@ div.plot-interval-control {
 
 #plot-help-close-button {
 	float: right;
-}
-
-.plot-legend-group {
-	display: inline-block;
-	padding: 2px;
-	margin: 2px;
-	border: 1px solid black;
-
-	div {
-		display: inline-block;
-	}
-}
-
-.plot-legend-trace {
-	display: inline-block;
-	margin: 2px;
-	padding: 2px;
-	background-color: #efefef;
-
-	& > canvas {
-		margin-right: 2px;
-		vertical-align: text-bottom;
-	}
 }
 
 #plot-timespan-control-form {
@@ -123,7 +100,7 @@ div.plot-interval-control {
 	}
 }
 
-#plot-legend, #plot-controls, #plot-canvas-box,
+#plot-controls, #plot-canvas-box,
 #plot-controls input, #plot-timespan-control-form input {
 	font: 1rem sans-serif;
 }

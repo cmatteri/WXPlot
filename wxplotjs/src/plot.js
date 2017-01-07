@@ -5,6 +5,10 @@ const MomentInterval = require('./momentinterval.js');
 const Trace = require('./trace.js');
 const XAxis = require('./xaxis.js');
 
+import React from 'react';
+import ReactDOM from 'react-dom';
+import Legend from './Legend.jsx';
+
 const TICK_LENGTH_IN_PX = 6;
 const TICK_PADDING_IN_PX = 3;
 
@@ -35,8 +39,8 @@ class Plot {
    * (by default, WXPlot uses monotone cubic interpolation to produce smooth
    * lines that pass through all data points and do not introduce minima or
    * maxima between points).
-   * @param {d3.Selection} options.legendRoot - The selection the legend will
-   * be appended to.
+   * @param {d3.Selection} options.legendContainer - The selection the legend
+   * will be appended to.
    * @param {d3.Selection} options.timeSpanControlRoot - The selection the
    * timespan control form will be appended to.
    */
@@ -72,14 +76,11 @@ class Plot {
     // Creates the legend, which is a set of line samples and accompanying
     // textual descriptions. The line samples are drawn on small Canvases so
     // the samples look exactly the same as the actual lines.
-    let legendRoot;
-    if ('legendRoot' in this._options) {
-      legendRoot = this._options.legendRoot;
-    } else {
-      legendRoot = controlRoot;
+    let legendContainer = this._options.legendContainer;
+    if (!legendContainer) {
+      legendContainer = controlRoot;
     }
-    legendRoot.append('div')
-        .attr('id', 'plot-legend');
+    this._legendRoot = legendContainer.append('div').node();
 
     this._updateControls();
 
@@ -611,65 +612,34 @@ class Plot {
    * @param {Array} dash - Specifies the line dash to be passed to
    * [ctx.setLineDash](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setLineDash).
    * Pass an empty array for solid lines
-   * @param {Number} width - The width of the trace in px
+   * @param {Number} thickness - The thickness of the trace in px
    * @param {Object} options - Properties of options are optional parameters
    * @param {String} options.group - The trace group. Traces are sorted by
    * group in the legend.
    * @returns {Plot} the object addTrace was called on
    */
-  addTrace(name, group, dataParams, color, dash, width, options = {}) {
+  addTrace(name, group, dataParams, color, dash, thickness, options = {}) {
     this._traces.push(new Trace(
       name, group, Object.assign({}, dataParams), this._lineGenerator, 
-      this._traceBox, color, dash, width, options));
+      this._traceBox, color, dash, thickness, options));
 
-    const legendText = name;
-    const legend = document.getElementById('plot-legend');
-    const groups = legend.children;
-    let groupTraces;
-    for (let i = 0; i < groups.length; i++) {
-        if(groups[i].children[0].innerText === group) {
-        groupTraces = groups[i].children[1];
-        break;
+    const groups = [];
+    for (const trace of this._traces) {
+      const index = groups.findIndex((group) => group.name === trace.group());
+      if (index === -1) {
+        groups.push({
+          name: trace.group(),
+          traces: [trace]
+        });
+      } else {
+        groups[index].traces.push(trace);
       }
     }
-    // If the group doesn't exist yet, create it.
-    if (!groupTraces) {
-      const groupNode = document.createElement('div');
-      legend.appendChild(groupNode);
-      groupNode.classList.add('plot-legend-group')
-      const label = document.createElement('span');
-      groupNode.appendChild(label);
-      label.innerText = group;
-      groupTraces = document.createElement('div');
-      groupNode.appendChild(groupTraces);
-    }
 
-    // Add a label and canvas with a line sample to the legend group for this
-    // trace.
-    const legendNode = document.createElement('div');
-    groupTraces.appendChild(legendNode);
-    legendNode.classList.add('plot-legend-trace');
-    const LEGEND_LINE_LEN = 20;
-    const canvas = document.createElement('canvas');
-    legendNode.appendChild(canvas);
-    const span = document.createElement('span');
-    legendNode.appendChild(span);
-    span.innerText = legendText;
-    canvas.width = LEGEND_LINE_LEN * window.devicePixelRatio;
-    canvas.height = this._textHeightPx * window.devicePixelRatio;
-    canvas.style.width = LEGEND_LINE_LEN + 'px';
-    canvas.style.height = this._textHeightPx + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    ctx.beginPath();
-    const lineHeight = Math.round(this._textHeightPx / 2) + 0.5;
-    ctx.moveTo(0, lineHeight);
-    ctx.lineTo(LEGEND_LINE_LEN, lineHeight);
-    ctx.lineWidth = width;
-    ctx.setLineDash(dash);
-    ctx.strokeStyle = color;
-    ctx.stroke();
-    return this;
+    ReactDOM.render(
+      <Legend textHeightPx={this._textHeightPx} groups={groups}/>,
+      this._legendRoot
+    );
   }
 
   /**
@@ -695,12 +665,6 @@ class Plot {
    */
   removeTraces() {
     this._traces = [];
-    let legend = document.getElementById('plot-legend');
-    const legendRoot = legend.parentNode;
-    legendRoot.removeChild(legend);
-    legend = document.createElement('div');
-    legend.id = 'plot-legend';
-    legendRoot.appendChild(legend);
     return this;
   }
 
