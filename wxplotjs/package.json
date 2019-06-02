@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "devDependencies": {
-    "react-scripts": "0.8.4"
+    "react-scripts": "3.0.1"
   },
   "dependencies": {
     "css-element-queries": "^0.3.2",
@@ -18,5 +18,17 @@
     "test": "react-scripts test --env=jsdom"
   },
   "author": "Chris Matteri",
-  "license": "MIT"
+  "license": "MIT",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }
