@@ -1,4 +1,5 @@
-#Overview
+# Overview
+
 WXPlot is an interactive plotting library for Weewx. It consists of a JavaScript front end (WXPlotJS) based on canvas and d3.js and a simple RESTful backend (WXPlotFlask) built with flask that uses Weewx as a library to perform database queries. It allows easy exploration of a weather station's complete history through panning and zooming.
 
 Data is dynamically loaded from the backend as the plot is panned/zoomed. This allows details to be viewed while zoomed in without performance degrading while zoomed out.
