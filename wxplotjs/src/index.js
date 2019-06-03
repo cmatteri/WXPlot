@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import './app.scss';
+import { Plot } from './plot.js';
 
 ReactDOM.render(
   <div></div>,
@@ -7,7 +9,6 @@ ReactDOM.render(
 );
 
 const MomentInterval = require('./momentinterval.js');
-const Plot = require('./plot.js');
 const TraceSelect = require('./traceselect.js');
 const d3 = window.d3;
 const moment = window.moment;

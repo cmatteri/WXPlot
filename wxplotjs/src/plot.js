@@ -1,3 +1,8 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
+import Legend from './Legend.jsx';
+import './plot.scss';
+
 const d3 = window.d3;
 const moment = window.moment;
 const Interval = require('./interval.js');
@@ -5,17 +10,13 @@ const MomentInterval = require('./momentinterval.js');
 const Trace = require('./trace.js');
 const XAxis = require('./xaxis.js');
 
-import React from 'react';
-import ReactDOM from 'react-dom';
-import Legend from './Legend.jsx';
-
 const TICK_LENGTH_IN_PX = 6;
 const TICK_PADDING_IN_PX = 3;
 
 /**
  * A weather data plot.
  */
-class Plot {
+export class Plot {
   /**
    * @param {d3.Selection} controlRoot - The selection the timespan and
    * interval controls will be appended to (unless options.timeSpanControlRoot)
@@ -193,7 +194,7 @@ class Plot {
 
   _initializeZoom() {
     const origInterval = this._origXScale.domain();
-    const minScale = (origInterval[1] - origInterval[0]) 
+    const minScale = (origInterval[1] - origInterval[0])
       / (this._maxInterval.end - this._maxInterval.start);
     const maxScale = (origInterval[1] - origInterval[0])
       / this._minIntervalLength;
@@ -313,7 +314,7 @@ class Plot {
         .html('Use the mouse or touch to pan/zoom.<br> '
           + 'Drag in the violet box below the x-axis to zoom to a certain '
           + 'region.');
-  
+
 
     // Add a row of buttons to control the timespan
     const timespanForm = this._timeSpanControlRoot.append('form')
@@ -418,7 +419,7 @@ class Plot {
     this._controlForm.start.classed('plot-input-error', false);
     this._controlForm.end.classed('plot-input-error', false);
     this._controlForm.errorMessage.text('');
-    this.setIntervalAnimate(new MomentInterval(start, end));      
+    this.setIntervalAnimate(new MomentInterval(start, end));
   }
 
   // Updates the plot's controls to reflect the plot's current interval
@@ -445,7 +446,7 @@ class Plot {
       /*
        * If the plot is at its maximum interval, color the max button
        * regardless of how the plot's timespan compares to the other buttons'
-       * timespans. 
+       * timespans.
        */
       const maxTimespan = timespans[timespans.length - 1];
       if (this._interval.equals(this._maxInterval)) {
@@ -491,9 +492,9 @@ class Plot {
       }
     }
 
-    /* 
+    /*
      * Clear any error messages related to the date controls. Update the date
-     * controls to reflect the plot's current interval.  
+     * controls to reflect the plot's current interval.
      */
     if (this._controlForm.errorMessage.text()) {
       this._controlForm.start.classed('plot-input-error', false);
@@ -597,7 +598,7 @@ class Plot {
    * "avg"
    * @param {String} dataParams.url - Must include the location of the backend
    * sever (which must have the same origin as the site serving wxplotjs), and
-   * the desired weewx data binding and observation type e.g. 
+   * the desired weewx data binding and observation type e.g.
    * URL-of-server/wxplot_binding/outTemp
    * @param {Number} dataParams.archiveIntervalMinutes - The archive interval
    * (or the maximum archive interval if multiple archive intervals have been
@@ -620,7 +621,7 @@ class Plot {
    */
   addTrace(name, group, dataParams, color, dash, thickness, options = {}) {
     this._traces.push(new Trace(
-      name, group, Object.assign({}, dataParams), this._lineGenerator, 
+      name, group, Object.assign({}, dataParams), this._lineGenerator,
       this._traceBox, color, dash, thickness, options));
 
     const groups = [];
@@ -672,7 +673,7 @@ class Plot {
    * Event handler for the D3 zoom event, which includes panning and zooming.
    * Updates the interval, gets new data for each trace, and renders
    */
-  _zoomed() {  
+  _zoomed() {
     const scale = d3.event.transform.rescaleX(this._origXScale);
     // Update this._xScale rather than assigning a new scale to it, so other
     // references to it (such as in XAxis objects) also get the update.
@@ -682,8 +683,8 @@ class Plot {
     const start = this._xScale.invert(0);
 
     // The latest visible time.
-    const end = this._xScale.invert(this._traceBox.width); 
-    this._interval = new MomentInterval(moment.tz(start, this._timeZone), 
+    const end = this._xScale.invert(this._traceBox.width);
+    this._interval = new MomentInterval(moment.tz(start, this._timeZone),
                                         moment.tz(end, this._timeZone));
     this._updateControls();
     this._setTraceIntervals();
@@ -855,7 +856,7 @@ class Plot {
     this._context.strokeStyle = 'black';
     this._context.stroke();
 
-    this._context.beginPath();   
+    this._context.beginPath();
     for (const tick of ticks.values) {
       const yPos = Math.round(this._yScale(tick)) + 0.5;
       this._context.moveTo(0, yPos);
@@ -891,6 +892,3 @@ class Plot {
     }
   }
 }
-
-// jsdoc doesn't work when the export is at the declaration.
-module.exports = Plot;
