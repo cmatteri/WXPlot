@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python2.7
 
 from flask import Flask
 from flask import request
@@ -42,14 +42,14 @@ def hello_world(data_binding, wx_observation):
 
     with weewx.manager.DBBinder(config_dict) as db_binder:
         # Note: The manager does not need to closed explicitly because the DBBinder
-        # will 
+        # will
         archive = db_binder.get_manager(data_binding)
-    
+
         (start_vec_t, stop_vec_t, data_vec_t) = \
             archive._getSqlVectors((start, end), wx_observation,
             aggregate_type=request.args.get('aggregateType'),
             aggregate_interval=aggregate_interval, unix_time_intervals=True)
-                
+
         # To reduce data size, the data returned by this server does not include
         # timestamps. Rather, it only includes values. The values must correspond
         # to consecutive aggregate intervals, with no gaps, but the data returned
@@ -59,7 +59,7 @@ def hello_world(data_binding, wx_observation):
         # intervals between start and end if there is no data for all the tail
         # intervals. The client assumes that the values start at the start time and
         # will handle short value arrays correctly.
-    
+
         values = []
         t = start
         for interval_start, value in zip(start_vec_t[0], data_vec_t[0]):
@@ -68,7 +68,7 @@ def hello_world(data_binding, wx_observation):
                 t += aggregate_interval
             values.append(round(value, 2))
             t += aggregate_interval
-        
+
         data = {
             'values': values,
             'unit': data_vec_t[1]
